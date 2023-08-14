@@ -82,7 +82,12 @@ class ZxxBackdrop:
                 else:
                     for trace in self.daughter_traces:
                         if max_freq > np.max(trace.trace) and np.min(trace.trace) > min_freq:
-                            plt.plot(np.array(trace.trace_indices), np.array(trace.trace), color='magenta')
+                            if len(trace.fragments) == 1:
+                                plt.plot(np.array(trace.trace_indices), np.array(trace.trace), color='magenta')
+                            else:
+                                for frag in trace.fragments:
+                                    plt.plot(np.array(frag.trace_indices), np.array(frag.trace))
+
 
         except Exception as e:
             print('Trace plotting error:', e)
@@ -220,7 +225,7 @@ if __name__ == "__main__":
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     SPAMM = 2
-    drop_threshold = -20
+    drop_threshold = -10
     before_existence_threshold = 15
     after_existence_threshold = 15
 
@@ -247,7 +252,8 @@ if __name__ == "__main__":
         trace_counter += 1
         print('Trace ' + str(trace_counter) + ': '
               + str(trace.trace[0]) + ' Hz Start --- '
-              + str(trace.avg_slope * 195)
-              + ' Hz/s Drift')
+              + str(trace.avg_slope)
+              + ' Hz/s Drift' + ' --- Avg Mass: ' + str(trace.avg_mass) + ' Da'
+              + ' --- Avg Charge: ' + str(trace.avg_charge))
 
-    ZxxFoundation.plot_all_traces_on_Zxx(4000, 24000, plot_trace_overlay=True, include_harmonics=True)
+    ZxxFoundation.plot_all_traces_on_Zxx(5000, 20000, plot_trace_overlay=False, include_harmonics=False)

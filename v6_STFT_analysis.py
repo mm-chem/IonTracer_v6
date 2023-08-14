@@ -60,19 +60,19 @@ export_Zxx_files = True
 voltage_scale = 0.2  # Input range for 16-bit digitizer card
 fs = 1000000  # Sampling frequency in Hz
 segment_length = 25  # Segment length in ms
-step_length = 5  # How many ms to advance the window
-zerofill = 250  # How many ms worth of data to zerofill
+step_length = 1  # How many ms to advance the window
+zerofill = 1000  # How many ms worth of data to zerofill
 
-low_freq = 2000  # Lower bound on region of interest
-high_freq = 20000  # Upper bound on region of interest
-min_trace_charge = 25  # Minimum amplitude to trace (default 25)
+low_freq = 6000  # Lower bound on region of interest
+high_freq = 40000  # Upper bound on region of interest
+min_trace_charge = 35  # Minimum amplitude to trace (default 25)
 min_trace_length = 5
-time_correlation_tolerance = 5  # In time bin_count on the x-axis. + or - direction
-freq_correlation_tolerance = 5000  # In Hz on the y-axis. - direction ONLY
-max_positive_slope = 40  # In Hz
-max_negative_slope = -100  # In Hz
+time_correlation_tolerance = 50  # In time bin_count on the x-axis. + or - direction
+freq_correlation_tolerance = 500  # In Hz on the y-axis. - direction ONLY
+max_positive_slope = 1000  # In Hz
+max_negative_slope = -1000  # In Hz
 
-harm_pairing_threshold = 75  # In Hz (maximum deviation for a trace to be considered a harmonic)
+harm_pairing_threshold = 300  # In Hz (maximum deviation for a trace to be considered a harmonic)
 check_start = 100  # Start check at x ms
 check_length = 100  # ms length of checking transform
 magnitude_to_charge_factor = 682500  # Magic number to convert amplitude to approximate charge
@@ -164,7 +164,7 @@ def one_file(file, save_dir):
         ################################################################################################################
         # Trace Visualization Calls (for debugging)
         ################################################################################################################
-        # traces.plot_paired_traces(STFT_cut, segment_length, step_length)
+        traces.plot_paired_traces(STFT_cut, segment_length, step_length)
         tracesHeader = str(low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
 

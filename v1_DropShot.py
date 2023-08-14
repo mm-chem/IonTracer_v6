@@ -164,7 +164,7 @@ class Trace:
             self.avg_charge = self.avg_charge / len(self.fragments)
         except Exception as e:
             print("Error dealing with fragmented traces: ", e)
-            # traceback.print_exc()
+            traceback.print_exc()
 
         try:
             self.calculate_avg_slope()
@@ -179,7 +179,6 @@ class Trace:
             slope_sum += frag.linfitEquation.coefficients[0]
             counter += 1
         self.avg_slope = slope_sum / counter
-
 
     def bridge_fragments(self, frag1, frag2):
         gap_length = frag2.fragStart - frag1.fragEnd
@@ -275,9 +274,9 @@ class Trace:
                 fragTrace = self.trace[fragStart:fragEnd]
                 fragIndices = self.trace_indices[fragStart:fragEnd]
                 harmFragTrace = self.trace_harm[fragStart:fragEnd]
-                fragAvgMag = np.average(self.trace_magnitudes[fragStart:fragEnd])
-                harmFragAvgMag = np.average(self.trace_magnitudes_harm[fragStart:fragEnd])
-                newFrag = Fragment(fragTrace, harmFragTrace, fragAvgMag, harmFragAvgMag, fragStart, fragEnd,
+                fragMag = self.trace_magnitudes[fragStart:fragEnd]
+                harmFragMag = self.trace_magnitudes_harm[fragStart:fragEnd]
+                newFrag = Fragment(fragTrace, harmFragTrace, fragMag, harmFragMag, fragStart, fragEnd,
                                    self.SPAMM, fragIndices)
                 self.fragments.append(newFrag)
             else:
@@ -299,7 +298,14 @@ class Trace:
 
 
 class Fragment:
-    def __init__(self, fragTrace, harmFragTrace, fragAvgMag, harmFragAvgMag, fragStart, fragEnd, spamm, trace_indices):
+    def __init__(self, fragTrace, harmFragTrace, fragMag, harmFragMag, fragStart, fragEnd, spamm, trace_indices):
+        self.charge_pt_by_pt = []
+        self.mass_pt_by_pt = []
+        self.HAR_pt_by_pt = []
+        self.C_E_pt_by_pt = []
+        self.energy_eV_pt_by_pt = []
+        self.TTR_from_HAR_pt_by_pt = []
+        self.m_z_pt_by_pt = []
         self.SPAMM = spamm
         self.trace_indices = trace_indices  # Fragment indices
         self.fragStart = fragStart
@@ -307,10 +313,14 @@ class Fragment:
         self.trace = fragTrace
         self.energy_eV = None
         self.harm_trace = harmFragTrace
-        self.avg_mag = fragAvgMag
-        self.harm_avg_mag = harmFragAvgMag
+        self.frag_mag = fragMag
+        self.avg_mag = np.average(fragMag)
+        self.harm_frag_mag = harmFragMag
+        self.harm_avg_mag = np.average(harmFragMag)
         self.avg_freq = np.average(fragTrace)
-        self.HAR = fragAvgMag / harmFragAvgMag
+        self.HAR = self.avg_mag / self.harm_avg_mag
+        for n in range(len(self.frag_mag)):
+            self.HAR_pt_by_pt.append(self.frag_mag[n] / self.harm_frag_mag[n])
         self.C_E = None
         self.m_z = None
         self.mass = None
@@ -321,6 +331,11 @@ class Fragment:
         self.lin_fit_frag()
         self.magic()
 
+        # Compute uncertainty in charge measurement for the fragment
+        self.charge_variance = np.var(self.charge_pt_by_pt)
+        # 25 IS THE SEGMENT LENGTH...... ONLY VALID IF THIS IS ACCURATE
+        self.charge_uncertainty = self.charge_variance / (len(self.trace) / 25)
+
     def lin_fit_frag(self):
         if len(self.trace) > 1:
             fit = np.polyfit(self.x_axis, self.trace, 1)
@@ -329,57 +344,56 @@ class Fragment:
             print("Unable to fit line of " + str(len(self.trace)))
 
     def magic(self):
-        if self.SPAMM == 2:
-            trap_V = 330  # trapping cones potential
+        trap_V = 330  # trapping cones potential
 
-            # Trap Potential/Ion eV/z ratio to energy calibration (all trap potentials)
-            # Equation---Energy =Trap/(A*TTR^3 + B*TTR^2 + C*TTR + D)
-            A = -0.24516
-            B = 1.84976
-            C = -4.92709
-            D = 5.87484
+        # Trap Potential/Ion eV/z ratio to energy calibration (all trap potentials)
+        # Equation---Energy =Trap/(A*TTR^3 + B*TTR^2 + C*TTR + D)
+        A = -0.24516
+        B = 1.84976
+        C = -4.92709
+        D = 5.87484
 
-            # HAR to TTR calibration (all trap settings)
-            # Equation--- TTR = E*HAR^3 + F*HAR^2 + G*HAR + H
-            E = -0.5305
-            F = 4.0047
-            G = -10.535
-            H = 11.333
+        # HAR to TTR calibration (all trap settings)
+        # Equation--- TTR = E*HAR^3 + F*HAR^2 + G*HAR + H
+        E = -0.5305
+        F = 4.0047
+        G = -10.535
+        H = 11.333
 
-            # Raw Amplitude to Charge Calibration (via BSA calibration curve, may change/improve with more calibration data)
-            # Equation--- Charge = (Raw Amplitude + J)/K
-            J = 0.0000
-            K = 0.91059  # OLD K VAL
-            # K = 0.8030
-            # K = 0.9999
+        # Raw Amplitude to Charge Calibration (via BSA calibration curve, may change/improve with more calibration data)
+        # Equation--- Charge = (Raw Amplitude + J)/K
+        J = 0.0000
+        K = 0.91059  # OLD K VAL
+        # K = 0.8030
+        # K = 0.9999
 
-            # (amp per charge) 1.6191E-6 for 250 ms zerofill, 1.6126E-6 for 125 ms zerofill
-            # calibration value with filter added 1.3342E-6 (0.91059 with updated amplitude in analysis program)
-            # calibration value with butterworth bandpass + old filter in series 1.4652E-6
-            # calibration value * rough factor in analysis program (682500 currently) 0.999999
-            # current calibration value ~0.87999 with 682500 factor in analysis
-            # 12-20 calibration value 0.84799
-            # 2-14 calibration value 0.81799
+        # (amp per charge) 1.6191E-6 for 250 ms zerofill, 1.6126E-6 for 125 ms zerofill
+        # calibration value with filter added 1.3342E-6 (0.91059 with updated amplitude in analysis program)
+        # calibration value with butterworth bandpass + old filter in series 1.4652E-6
+        # calibration value * rough factor in analysis program (682500 currently) 0.999999
+        # current calibration value ~0.87999 with 682500 factor in analysis
+        # 12-20 calibration value 0.84799
+        # 2-14 calibration value 0.81799
 
-            # Charge correction factor constants from simulation of 20 kHz 400 us RC simulation across range of TTR
-            # Equation--- Factors = 1/(L*TTR+M)
-            L = -0.1876
-            M = 1.3492
+        # Charge correction factor constants from simulation of 20 kHz 400 us RC simulation across range of TTR
+        # Equation--- Factors = 1/(L*TTR+M)
+        L = -0.1876
+        M = 1.3492
 
-            # Energy (eV/z) to C-value conversion (m/z = C(E)/f^2)
-            # C(E) function of both trap_V and energy (but not their ratio)
-            # Equation--- C(E) = (A00+A10*Energy+A01*Trap_V+A20*Energy^2+A11*Energy*Trap_V+A02*Trap_V^2+A30*Energy^3+
-            # A21*Energy^2*Trap_V+  A12*Energy*Trap_V^2+A03*Trap_V^3)^2
-            A00 = 602227.450695831
-            A10 = -11874.0933576314
-            A01 = 15785.4833447021
-            A20 = -110.631481581344
-            A11 = 179.897639821121
-            A02 = -80.623006669759
-            A30 = -0.0729582264231568
-            A21 = 0.3250825276845
-            A12 = -0.369837273160484
-            A03 = 0.130371575432137
+        # Energy (eV/z) to C-value conversion (m/z = C(E)/f^2)
+        # C(E) function of both trap_V and energy (but not their ratio)
+        # Equation--- C(E) = (A00+A10*Energy+A01*Trap_V+A20*Energy^2+A11*Energy*Trap_V+A02*Trap_V^2+A30*Energy^3+
+        # A21*Energy^2*Trap_V+  A12*Energy*Trap_V^2+A03*Trap_V^3)^2
+        A00 = 602227.450695831
+        A10 = -11874.0933576314
+        A01 = 15785.4833447021
+        A20 = -110.631481581344
+        A11 = 179.897639821121
+        A02 = -80.623006669759
+        A30 = -0.0729582264231568
+        A21 = 0.3250825276845
+        A12 = -0.369837273160484
+        A03 = 0.130371575432137
 
         if self.SPAMM == 3:
             A = 75.23938332
@@ -418,6 +432,26 @@ class Fragment:
             T = -0.232900
             U = 0.965265
             trap_V = 330
+
+        for n in range(len(self.frag_mag)):
+            self.TTR_from_HAR_pt_by_pt.append(E * self.HAR_pt_by_pt[n] ** 3 + F * self.HAR_pt_by_pt[n] ** 2 + \
+                                              G * self.HAR_pt_by_pt[n] + H)
+
+            self.energy_eV_pt_by_pt.append(trap_V / (A * self.TTR_from_HAR_pt_by_pt[n] ** 3 + B *
+                                                     self.TTR_from_HAR_pt_by_pt[n] ** 2 + C *
+                                                     self.TTR_from_HAR_pt_by_pt[n] + D))
+
+            self.C_E_pt_by_pt.append((A00 + A10 * self.energy_eV_pt_by_pt[n] + A01 * trap_V + A20 *
+                                      self.energy_eV_pt_by_pt[n] ** 2 + A11 * self.energy_eV_pt_by_pt[n] *
+                                      trap_V + A02 * trap_V ** 2 + A30 * self.energy_eV_pt_by_pt[n] ** 3 +
+                                      A21 * self.energy_eV_pt_by_pt[n] ** 2 * trap_V + A12 *
+                                      self.energy_eV_pt_by_pt[n] * trap_V ** 2 + A03 * trap_V ** 3) ** 2)
+
+            self.m_z_pt_by_pt.append(self.C_E_pt_by_pt[-1] / self.trace[n] ** 2)
+            uncorrected_charge = (self.frag_mag[n] + J) / K  # calibration from BSA charge states
+            corr_factors = 1 / (L * self.TTR_from_HAR_pt_by_pt[n] + M)
+            self.charge_pt_by_pt.append(uncorrected_charge * corr_factors)
+            self.mass_pt_by_pt.append(self.m_z_pt_by_pt[-1] * self.charge_pt_by_pt[-1])
 
         TTR_from_HAR = E * self.HAR ** 3 + F * self.HAR ** 2 + G * self.HAR + H
         self.energy_eV = trap_V / (A * TTR_from_HAR ** 3 + B * TTR_from_HAR ** 2 + C * TTR_from_HAR + D)
@@ -518,7 +552,7 @@ if __name__ == "__main__":
     plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
     plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-    show_plots = True
+    show_plots = False
     smoothed_output = True  # Smooth the histogram before calculating the peak
     f_computed_axv_lines = True
     SPAMM = 3

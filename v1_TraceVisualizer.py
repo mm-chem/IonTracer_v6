@@ -25,28 +25,31 @@ class ZxxBackdrop:
                     self.Zxx_filename = os.path.join(root, file)
 
     def load_Zxx(self):
-        self.find_Zxx_file()
-        with open(self.Zxx_filename, newline='') as file:
-            Zxx_string = file.read().replace('\n', '')
-        Zxx_string = Zxx_string.split("//, ")
-        header_data = Zxx_string[0]
-        header_data = header_data.split(', ')[0]
-        header_data = header_data.split('|')
-        self.f_range_offset = float(header_data[0])
-        self.resolution = float(header_data[1])
-        self.t_range_offset = float(header_data[2])
-        Zxx_string = Zxx_string[1]
-        Zxx_string = Zxx_string.replace('[', ',')
-        Zxx_string = Zxx_string.replace(']', ',')
-        Zxx_string = Zxx_string.split(',')
-        Zxx_array = []
-        for element in Zxx_string:
-            if len(element) > 2:
-                element = element.replace(' ', ', ')
-                element = element.replace(', , ', ', ')
-                element = element.split(',')
-                Zxx_array.append([float(i) for i in element])
-        self.Zxx = np.flipud(np.rot90(np.array(Zxx_array)))
+        try:
+            self.find_Zxx_file()
+            with open(self.Zxx_filename, newline='') as file:
+                Zxx_string = file.read().replace('\n', '')
+            Zxx_string = Zxx_string.split("//, ")
+            header_data = Zxx_string[0]
+            header_data = header_data.split(', ')[0]
+            header_data = header_data.split('|')
+            self.f_range_offset = float(header_data[0])
+            self.resolution = float(header_data[1])
+            self.t_range_offset = float(header_data[2])
+            Zxx_string = Zxx_string[1]
+            Zxx_string = Zxx_string.replace('[', ',')
+            Zxx_string = Zxx_string.replace(']', ',')
+            Zxx_string = Zxx_string.split(',')
+            Zxx_array = []
+            for element in Zxx_string:
+                if len(element) > 2:
+                    element = element.replace(' ', ', ')
+                    element = element.replace(', , ', ', ')
+                    element = element.split(',')
+                    Zxx_array.append([float(i) for i in element])
+            self.Zxx = np.flipud(np.rot90(np.array(Zxx_array)))
+        except Exception:
+            print("No ZxxBackdrop detected.")
 
     def plot_ion_trace_on_Zxx(self, drop, trace_ID_str, save_plots=False):
         try:
@@ -177,7 +180,7 @@ class ZxxBackdrop:
 
         # Generate zoomed figure for fundamentals
         min_freq = min_fundamental_trace - 2000
-        max_freq = max_fundamental_trace + 500
+        max_freq = max_fundamental_trace + 2000
         try:
             if plot_trace_on_Zxx:
                 plt.plot(np.array(trace.trace_indices), np.array(trace.trace), color='magenta')
@@ -225,6 +228,10 @@ if __name__ == "__main__":
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     SPAMM = 2
+    print("ANALYSIS PERFORMED FOR SPAMM INSTRUMENT")
+    print("---------------------------------------")
+    print(str(SPAMM))
+    print("---------------------------------------")
     drop_threshold = -10
     before_existence_threshold = 15
     after_existence_threshold = 15
@@ -256,4 +263,4 @@ if __name__ == "__main__":
               + ' Hz/s Drift' + ' --- Avg Mass: ' + str(trace.avg_mass) + ' Da'
               + ' --- Avg Charge: ' + str(trace.avg_charge))
 
-    ZxxFoundation.plot_all_traces_on_Zxx(5000, 20000, plot_trace_overlay=False, include_harmonics=False)
+    ZxxFoundation.plot_all_traces_on_Zxx(14000, 15250, plot_trace_overlay=False, include_harmonics=False)

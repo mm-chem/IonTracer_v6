@@ -1140,7 +1140,7 @@ if __name__ == "__main__":
     if f_computed_charge_loss:
         # Plot frequency computed charge loss alongside directly computed charge loss
         fig, ax = plt.subplots(layout='tight')
-        hist_out = ax.hist(dropsChargeChange, bin_count, range=[-16, 12])
+        hist_out = ax.hist(dropsChargeChange, bin_count, range=[-15, 10])
         if smoothed_output:
             # plt.clf()
             bins = hist_out[1][0:-1]
@@ -1161,15 +1161,15 @@ if __name__ == "__main__":
         peak_contrib_to_slice = gauss(bins, param[0], param[1], param[2], param[3])
 
         if amp_computed_charge_loss:
-            plt.plot(bins, peak_contrib_to_slice, linewidth=3, linestyle="solid", color="red")
+            ax.plot(bins, peak_contrib_to_slice, linewidth=3, linestyle="solid", color="red")
             text_string = f'{param[1]:.2f}'
-            plt.text(param[1] + 5, param[0] - 1.5, text_string, fontsize=16)
+            ax.text(param[1] + 5, param[0] - 1.5, text_string, fontsize=16)
             print("Amplitude Computed Peak Center: ", str(param[1]))
 
             ax.set_title("")
             ax.set_xlabel('Charge', fontsize=24, weight='bold')
             ax.set_ylabel('Counts', fontsize=24, weight='bold')
-            ax.set_xticks([-16, -12, -8, -4, 0, 4, 8, 12])
+            ax.set_xticks([-15, -10, -5, 0, 5, 10])
             ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
             ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
             ax.minorticks_on()
@@ -1192,7 +1192,7 @@ if __name__ == "__main__":
         ax.set_title("")
         ax.set_xlabel('Charge', fontsize=24, weight='bold')
         ax.set_ylabel('Counts', fontsize=24, weight='bold')
-        ax.xticks([-16, -12, -8, -4, 0, 4, 8, 12])
+        ax.set_xticks([-4, -3, -2, -1, 0])
         ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
         ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
         ax.minorticks_on()
@@ -1202,6 +1202,9 @@ if __name__ == "__main__":
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_linewidth(3)
         ax.spines['top'].set_linewidth(3)
+
+        plt.axvline(-1, color='red', linestyle='solid', linewidth=3)
+        plt.axvline(-2, color='red', linestyle='solid', linewidth=3)
 
         if smoothed_output:
             # plt.clf()
@@ -1225,9 +1228,6 @@ if __name__ == "__main__":
         #         text_string = f'{peak:.2f}'
         #         plt.text(-4, max(counts), text_string)
 
-        # plt.axvline(-1, color='red', linestyle='dashdot')
-        # plt.axvline(-2, color='red', linestyle='dashdot')
-
         #     dx = bin_count * 0.0002
         #     A_constraints = [-np.inf, np.inf]  # Amplitude
         #     mu_constraints = [peak - dx, peak + dx]  # x-axis flexibility
@@ -1249,10 +1249,6 @@ if __name__ == "__main__":
         #
         #     peak_counter = peak_counter + 1
 
-        plt.title("Frequency Computed Charge Loss")
-        plt.xlabel('Charge')
-        plt.ylabel('Counts')
-        plt.xticks(range(f_computed_plot_min, f_computed_plot_max))
         if save_plots:
             plt.savefig(str(analysis_name) + '_f_computed_charge_loss.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5, transparent='true')
         if show_plots:
@@ -1384,18 +1380,28 @@ if __name__ == "__main__":
         gaussmap = gaussian_filter(heatmap, 1, mode='nearest')
 
         # plt.subplot(1, 2, 2)  # row 1, col 2 index 1
-        plt.imshow(gaussmap.T, cmap='nipy_spectral_r', extent=extent, origin='lower', aspect='auto',
+        fig, ax = plt.subplots(layout='tight')
+        ax.imshow(gaussmap.T, cmap='nipy_spectral_r', extent=extent, origin='lower', aspect='auto',
                    interpolation='none')
 
-        # plt.hist2d(mass_collection, charge_collection, bins=125, range=[[500000, 20000000], [0, 500]], cmap='nipy_spectral_r')
-        plt.colorbar()
-        plt.title("2D Mass Spectrum")
-        plt.xlabel('Mass (MDa)')
-        plt.ylabel('Charge')
+        ax.set_title("")
+        ax.set_xlabel('Mass (MDa)', fontsize=24, weight='bold')
+        ax.set_ylabel('Charge', fontsize=24, weight='bold')
+        ax.set_xticks(hist_mass_bins, hist_mass_labels)
+        # ax.set_yticks(hist_charge_bins, hist_charge_labels)
+        ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
+        ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
+        ax.minorticks_on()
+        ax.tick_params(axis='x', which='minor', width=3, length=4)
+        ax.tick_params(axis='y', which='minor', width=3, length=4)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_linewidth(3)
+        ax.spines['top'].set_linewidth(3)
+
         # x = np.multiply(np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]), 1000000)
         # labels = ["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150"]
-        plt.xticks(hist_mass_bins, hist_mass_labels)
-        plt.yticks(hist_charge_bins, hist_charge_labels)
+
         if save_plots:
             plt.savefig(str(analysis_name) + '_mass_spectrum_2D.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5, transparent='true')
         if show_plots:
@@ -1449,7 +1455,8 @@ if __name__ == "__main__":
         for n in range(len(mass_collection)):
             z2_n.append(charge_collection_scaled[n] / mass_collection_scaled[n])
 
-        hist_out = plt.hist(z2_n, 100, range=[0, 0.6])
+        fig, ax = plt.subplots(layout='tight')
+        hist_out = ax.hist(z2_n, 100, range=[0, 0.6])
         if smoothed_output:
             # plt.clf()
             bins = hist_out[1][0:-1]
@@ -1479,9 +1486,19 @@ if __name__ == "__main__":
             plt.text(0.8, param[0] - 1.5, text_string, fontsize=16)
         print("z^2/n center", str(param[1]))
 
-        plt.title("z^2/n")
-        plt.xlabel('(z^2)/n')
-        plt.ylabel('Counts')
+        ax.set_title("")
+        ax.set_xlabel('Critical Value', fontsize=24, weight='bold')
+        ax.set_ylabel('Counts', fontsize=24, weight='bold')
+        ax.set_xticks([0, 0.2, 0.4, 0.6])
+        ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
+        ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
+        ax.minorticks_on()
+        ax.tick_params(axis='x', which='minor', width=3, length=4)
+        ax.tick_params(axis='y', which='minor', width=3, length=4)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_linewidth(3)
+        ax.spines['top'].set_linewidth(3)
 
         if save_plots:
             plt.savefig(str(analysis_name) + '_z2_over_n.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5, transparent='true')

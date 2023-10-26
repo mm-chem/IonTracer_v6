@@ -1,3 +1,4 @@
+import math
 import pickle
 import numpy as np
 from scipy import signal as sig
@@ -5,6 +6,37 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import os
 from tkinter import filedialog as fd
+from scipy.optimize import curve_fit
+from scipy.ndimage.filters import gaussian_filter
+
+
+def plot_rayleigh_line(axis_range=[0, 200]):
+    coul_e = 1.6022E-19
+    avo = 6.022E23
+    surfacet = 0.07286
+    # 0.07286 H20 at 20 C #0.05286 for NaCl split, 0.07286 for LiCl split 0.0179 for hexanes 0.0285 TOLUENE 0.050 for
+    # mNBA
+    surfacetalt = 0.0179
+    perm = 8.8542E-12  # vacuum permittivity
+    density = 999800  # g/m^3 999800 for water
+    low_d, high_d, step_d = axis_range[0], axis_range[1], 0.5  # diameter range/step size in nm
+    low = low_d * 1.0E-9
+    high = high_d * 1.0E-9
+    step = step_d * 1.0E-9
+    qlist = []
+    q2list = []
+    mlist = []
+    m_list = []
+    for d in np.arange(low, high, step):
+        q = (8 * math.pi * perm ** 0.5 * surfacet ** 0.5 * (d / 2) ** 1.5) / coul_e
+        q2 = (8 * math.pi * perm ** 0.5 * surfacetalt ** 0.5 * (d / 2) ** 1.5) / coul_e
+        qlist.append(q)
+        q2list.append(q2)
+        m = ((4 / 3) * math.pi * (d / 2) ** 3) * density * avo
+        mlist.append(m)
+        m_list.append(m)
+
+    return m_list, qlist
 
 
 def generate_filelist(termString):
@@ -32,33 +64,38 @@ if __name__ == "__main__":
     plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    files = generate_filelist('.pickle')
+    mass_collection = []
+    charge_collection = []
+
+    files = generate_filelist('_mass_spectrum.pickle')
     slope_distributions = []
     for file in files:
         dbfile = open(file, 'rb')
         db = pickle.load(dbfile)
-        slope_distributions.append(db)
+        for mass in db[0]:
+            mass_collection.append(mass)
+        for charge in db[1]:
+            charge_collection.append(charge)
         dbfile.close()
 
-    mass_collection =
     # Plot a 2D mass spectrum
     # Rayleigh line parameters are in DIAMETER (nm)
-    plot_rayleigh_line(axis_range=[0, 200])
+    fig, ax = plt.subplots(layout='tight')
+    rayleigh_x, rayleigh_y = plot_rayleigh_line(axis_range=[0, 200])
+    ax.plot(rayleigh_x, rayleigh_y, color='black', linestyle="dashed", linewidth=2)
     heatmap, xedges, yedges = np.histogram2d(mass_collection, charge_collection, bins=[160, 120],
-                                             range=[[min(hist_mass_bins), max(hist_mass_bins)],
-                                                    [min(hist_charge_bins), max(hist_charge_bins)]])
+                                             range=[[0, 8000000], [0, 300]])
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     gaussmap = gaussian_filter(heatmap, 1, mode='nearest')
 
     # plt.subplot(1, 2, 2)  # row 1, col 2 index 1
-    fig, ax = plt.subplots(layout='tight')
     ax.imshow(gaussmap.T, cmap='nipy_spectral_r', extent=extent, origin='lower', aspect='auto',
               interpolation='none')
 
     ax.set_title("")
     ax.set_xlabel('Mass (MDa)', fontsize=24, weight='bold')
     ax.set_ylabel('Charge', fontsize=24, weight='bold')
-    ax.set_xticks(hist_mass_bins, hist_mass_labels)
+    ax.set_xticks([2000000, 4000000, 6000000, 8000000], ["2", "4", "6", "8"])
     # ax.set_yticks(hist_charge_bins, hist_charge_labels)
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
@@ -70,13 +107,6 @@ if __name__ == "__main__":
     ax.spines['top'].set_linewidth(3)
     ax.spines['top'].set_linewidth(3)
 
-    # x = np.multiply(np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]), 1000000)
-    # labels = ["0", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150"]
-
-    if save_plots:
-        plt.savefig(str(analysis_name) + '_mass_spectrum_2D.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
-                    transparent='true')
-    if show_plots:
-        plt.show()
-    else:
-        plt.close()
+    save_path = "/Users/mmcpartlan/Desktop/"
+    plt.savefig(save_path + 'exported_mass_spectrum_2D.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
+                transparent='true')

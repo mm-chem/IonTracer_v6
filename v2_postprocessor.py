@@ -660,7 +660,16 @@ if __name__ == "__main__":
     mass_spectrum_2D = 1
     plot_drop_statistics = 0
     plot_1C_loss_scaled_m_z = 0
+    # For Emeline's project
+    export_no_drop_percent_mass_change = 0
     z_2_n = 1
+
+    # Salt and z2/n controls
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    salt_n = 4
+    salt_MW = 245.2  # LaCl3
+    # salt_MW = 74.5  # KCl
+    # salt_MW = 111.1  # CaCl2
 
 
     # Energy filter controls
@@ -886,25 +895,6 @@ if __name__ == "__main__":
 
         dropsChargeChange.append(float(drop.delta_charge))
         freqComputedChargeLoss.append(float(drop.freq_computed_charge_loss))
-        if demo_trace_range[0] > drop.freq_computed_charge_loss > demo_trace_range[1] and export_demo_drops:
-            try:
-                print("Exporting DRX " + str(figure_counter) + " of " + str(len(drops)))
-                background = ZxxToolkit.ZxxBackdrop(drop.folder)
-                bg_save_folder = str(analysis_name)
-                try:
-                    os.mkdir(bg_save_folder)
-                except FileExistsError:
-                    print("DrX base path exists already.")
-                bg_save_folder = bg_save_folder + '/DrX'
-                try:
-                    os.mkdir(bg_save_folder)
-                except FileExistsError:
-                    print("DrX path exists already.")
-                background.plot_zoomed_drop_on_Zxx(drop, drop.drop_index_trace, str(figure_counter), bg_save_folder,
-                                                   save_plots=True)
-                figure_counter = figure_counter + 1
-            except Exception as e:
-                print("Error exporting demo drop: ", e)
 
 
     if drops_per_trace:
@@ -955,7 +945,7 @@ if __name__ == "__main__":
         for n in range(len(mass_collection)):
             z2_n.append(charge_collection_scaled[n] / mass_collection_scaled[n])
 
-        dbfile = open(str(analysis_name) + '_2D_mass_spectrum.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_z2_n.pickle', 'ab')
         pickle.dump(z2_n, dbfile)
         dbfile.close()
 

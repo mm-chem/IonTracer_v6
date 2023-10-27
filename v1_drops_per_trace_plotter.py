@@ -46,12 +46,12 @@ if __name__ == "__main__":
             drop_counts.append(freq)
         dbfile.close()
 
-    fig, ax = plt.subplots(layout='tight')
-    ax.hist(drop_counts, bins=[0, 1, 2, 3, 4], align='left', color='red')
+    fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
+    ax.hist(drop_counts, bins=[0, 1, 2, 3, 4], align='left', color='black')
     labels = ["0", "1", "2", "3"]
 
     ax.set_title("")
-    ax.set_xlabel('Emission Events per Trace', fontsize=24, weight='bold')
+    ax.set_xlabel('Emission Events per Single Trace', fontsize=24, weight='bold')
     ax.set_ylabel('Counts', fontsize=24, weight='bold')
     ax.set_xticks([0, 1, 2, 3])
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     ax.spines['top'].set_linewidth(3)
 
     save_path = "/Users/mmcpartlan/Desktop/"
-    plt.savefig(save_path + 'exported_drops_per_trace.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
+    plt.savefig(save_path + 'exported_drops_per_trace.png', bbox_inches='tight', dpi=300.0,
                 transparent='true')

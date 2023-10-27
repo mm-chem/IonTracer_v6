@@ -47,7 +47,7 @@ if __name__ == "__main__":
         dbfile.close()
 
     # DEFINE ax to be the small and ax2 to be the large numbers
-    colors = ['red', 'green', 'orange', 'blue', 'purple']
+    colors = ['blue', 'green', 'orange', 'purple']
     color_counter = 0
     f, (ax, ax2) = plt.subplots(1, 2, facecolor='w', figsize=(14, 7))
     smoothed_output = False
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             large_plot_dists.append(bins_big)
             large_weights.append(counts_big/(np.max(counts_big)))
 
-    ax.hist(small_plot_dists_truncated, small_plot_dists[0], weights=small_weights, color=['orange', 'red', 'black'],
+    ax.hist(small_plot_dists_truncated, small_plot_dists[0], weights=small_weights, color=['orange', 'dodgerblue', 'black'],
             histtype="stepfilled")
     labels = ["0", "0.02", "0.04", "0.06"]
     x = [0.000, 0.02, 0.04, 0.06]

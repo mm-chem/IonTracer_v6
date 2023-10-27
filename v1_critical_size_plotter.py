@@ -26,6 +26,12 @@ def gauss(x, A, mu, sigma, offset):
     return offset + A * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
 
 
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx]
+
+
 if __name__ == "__main__":
     SMALL_SIZE = 18
     MEDIUM_SIZE = 21
@@ -52,7 +58,7 @@ if __name__ == "__main__":
             z2_n.append(ratio)
         dbfile.close()
 
-    fig, ax = plt.subplots(layout='tight', figsize=(7, 7))
+    fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
     hist_out = ax.hist(z2_n, 100, range=[0, 0.5], color='orange')
 
     bins = hist_out[1][0:-1]
@@ -75,6 +81,10 @@ if __name__ == "__main__":
     if fit_to_gaussian:
         plt.plot(bins, peak_contrib_to_slice, linestyle="solid", color='red', linewidth=3)
         print("z^2/n center", str(param[1]))
+    else:
+        half_max = (max(counts) - min(counts))/2
+        find_nearest(bins, half_max)
+
 
     ax.set_title("")
     ax.set_xlabel('Critical Value', fontsize=24, weight='bold')

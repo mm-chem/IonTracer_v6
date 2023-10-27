@@ -21,17 +21,14 @@ def generate_filelist(termString):
                 print("Loaded: " + filelist[-1])
     return filelist
 
+
 def gauss(x, A, mu, sigma, offset):
     return offset + A * np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
 
 
 if __name__ == "__main__":
-    plot_color = 'red'
-
-    if plot_color == 'red':
-        fit_color = 'black'
-    else:
-        fit_color = 'red'
+    plot_color = 'black'
+    fit_color = 'red'
 
     SMALL_SIZE = 18
     MEDIUM_SIZE = 21
@@ -68,7 +65,7 @@ if __name__ == "__main__":
         dbfile.close()
 
     # Plot frequency computed charge loss alongside directly computed charge loss
-    fig, ax = plt.subplots(layout='tight')
+    fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
     hist_out = ax.hist(dropsChargeChange, 100, range=[-15, 10], color=plot_color)
 
     bins = hist_out[1][0:-1]
@@ -104,12 +101,10 @@ if __name__ == "__main__":
     ax.spines['top'].set_linewidth(3)
 
     save_path = "/Users/mmcpartlan/Desktop/"
-    plt.savefig(save_path + 'exported_amp_computed.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
+    plt.savefig(save_path + 'exported_amp_computed.png', bbox_inches='tight', dpi=300.0,
                 transparent='true')
 
-
-
-    fig, ax = plt.subplots(layout='tight')
+    fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
     hist_out = ax.hist(freqComputedChargeLoss, 100, range=[-4, 0], color=plot_color)
     ax.set_title("")
     ax.set_xlabel('Charge', fontsize=24, weight='bold')

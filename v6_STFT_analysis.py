@@ -54,7 +54,7 @@ def generate_filelist(folders, termString):
 
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
-export_Zxx_files = False
+export_Zxx_files = True
 
 # Parameters for STFT, indexed for each directory to be analyzed
 voltage_scale = 0.2  # Input range for 16-bit digitizer card

@@ -45,7 +45,7 @@ if __name__ == "__main__":
     plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    fit_to_gaussian = 1
+    fit_to_gaussian = 0
 
     z2_n = []
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         dbfile.close()
 
     fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
-    hist_out = ax.hist(z2_n, 100, range=[0, 0.5], color='orange')
+    hist_out = ax.hist(z2_n, 100, range=[0, 0.5], color='black')
 
     bins = hist_out[1][0:-1]
     counts = hist_out[0]
@@ -97,8 +97,10 @@ if __name__ == "__main__":
     ax.tick_params(axis='y', which='minor', width=3, length=4)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_linewidth(3)
-    ax.spines['top'].set_linewidth(3)
+    ax.spines['bottom'].set_linewidth(3)
+    ax.spines['left'].set_linewidth(3)
+
+    plt.axvline(0.375, color='red', linestyle='solid', linewidth=3)
 
     save_path = "/Users/mmcpartlan/Desktop/"
     plt.savefig(save_path + 'exported_z2_n.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,

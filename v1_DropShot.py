@@ -665,10 +665,11 @@ if __name__ == "__main__":
     # Liquid drop model controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     z_2_n = 1
-    salt_n = 4
-    salt_MW = 245.2  # LaCl3
+    salt_n = 2
+    # salt_MW = 245.2  # LaCl3
     # salt_MW = 74.5  # KCl
     # salt_MW = 111.1  # CaCl2
+    salt_MW = 58.5  # NaCl
     fit_to_gaussian = True
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     export_demo_drops = False
@@ -683,17 +684,11 @@ if __name__ == "__main__":
     # Energy filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # eV / z boundaries... ions cannot physically exist outside a small range of energies. Set that range here
-    ev_z_min = 150  # Default 200
-    ev_z_max = 300  # Default 245
+    ev_z_min = 180  # Default 200
+    ev_z_max = 350  # Default 245
 
-    # Splitting data by slope controls
+    # Ion existence pre/post emission event controls and slope controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    separation_line_slopes = [0, 15]  # Dividing line between slopes... set to zero for no slope separation
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    # Ion existence pre/post emission event controls
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
     separation_line_slopes = [-15, 15]  # Dividing line between slopes... set to zero for no slope separation
     # Set how many steps the fragments before and after a drop need to exist for to be analyzed here
     before_existence_threshold = 25
@@ -702,14 +697,14 @@ if __name__ == "__main__":
 
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_mass = 10 * 1000000  # Maximum mass in MDa (only adjust 1st number)
+    max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
     min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_charge_selection = 350
-    min_charge_selection = 0
+    max_charge_selection = 1000
+    min_charge_selection = 100
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # 2D Hist Controls
@@ -732,7 +727,7 @@ if __name__ == "__main__":
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # This value sets the maximum x-axis value that the slope distributions will be plotted with
-    slope_max = 1
+    slope_max = 15
     # Plot all slopes as a background? Disabling this only plots slopes included in analysis.
     plot_comparative_slopes = False
     plot_fit_line = False

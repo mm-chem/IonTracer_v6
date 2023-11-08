@@ -27,7 +27,7 @@ def gauss(x, A, mu, sigma, offset):
 
 
 if __name__ == "__main__":
-    plot_color = 'black'
+    plot_color = 'dodgerblue'
     fit_color = 'red'
 
     SMALL_SIZE = 18
@@ -97,8 +97,8 @@ if __name__ == "__main__":
     ax.tick_params(axis='y', which='minor', width=3, length=4)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_linewidth(3)
-    ax.spines['top'].set_linewidth(3)
+    ax.spines['bottom'].set_linewidth(3)
+    ax.spines['left'].set_linewidth(3)
 
     save_path = "/Users/mmcpartlan/Desktop/"
     plt.savefig(save_path + 'exported_amp_computed.png', bbox_inches='tight', dpi=300.0,
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     ax.tick_params(axis='y', which='minor', width=3, length=4)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_linewidth(3)
-    ax.spines['top'].set_linewidth(3)
+    ax.spines['bottom'].set_linewidth(3)
+    ax.spines['left'].set_linewidth(3)
 
     plt.axvline(-1, color=fit_color, linestyle='solid', linewidth=3)
     plt.axvline(-2, color=fit_color, linestyle='solid', linewidth=3)

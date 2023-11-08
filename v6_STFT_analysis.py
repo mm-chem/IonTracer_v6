@@ -54,23 +54,24 @@ def generate_filelist(folders, termString):
 
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
-export_Zxx_files = True
+export_Zxx_files = False
+export_image_files = True
 
 # Parameters for STFT, indexed for each directory to be analyzed
 voltage_scale = 0.2  # Input range for 16-bit digitizer card
 fs = 1000000  # Sampling frequency in Hz
-segment_length = 25  # Segment length in ms
-step_length = 5  # How many ms to advance the window
+segment_length = 10  # Segment length in ms
+step_length = 1  # How many ms to advance the window
 zerofill = 250  # How many ms worth of data to zerofill
 
 low_freq = 8000  # Lower bound on region of interest
 high_freq = 40000  # Upper bound on region of interest
-min_trace_charge = 25  # Minimum amplitude to trace (default 25)
+min_trace_charge = 40  # Minimum amplitude to trace (default 25)
 min_trace_length = 5
-time_correlation_tolerance = 5  # In time bin_count on the x-axis. + or - direction
-freq_correlation_tolerance = 200  # In Hz on the y-axis. - direction ONLY
-max_positive_slope = 1000  # In Hz
-max_negative_slope = -1000  # In Hz
+time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
+freq_correlation_tolerance = 1000  # In Hz on the y-axis. How close do trace fragments need to be - direction ONLY
+max_positive_slope = 50  # In Hz
+max_negative_slope = -200  # In Hz, how much can points in ONE FRAGMENT differ
 
 harm_pairing_threshold = 75  # In Hz (maximum deviation for a trace to be considered a harmonic)
 check_start = 100  # Start check at x ms
@@ -145,7 +146,7 @@ def one_file(file, save_dir):
 
         starting_t = pick_time_pts[0]
         traces = ionTracer.IonField(low_freq, starting_t, min_trace_length,
-                                    time_correlation_tolerance, freq_correlation_tolerance)
+                                    time_correlation_tolerance, freq_correlation_tolerance, step_length, segment_length)
 
         ################################################################################################################
         # Ion Tracing / Post-Processing
@@ -167,6 +168,8 @@ def one_file(file, save_dir):
         # traces.plot_paired_traces(STFT_cut, segment_length, step_length)
         tracesHeader = str(low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
+        if export_image_files:
+            traces.save_png(trace_save_directory, file, 8000, 15000)
 
 
 if __name__ == "__main__":

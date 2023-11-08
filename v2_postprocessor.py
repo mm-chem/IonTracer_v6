@@ -19,6 +19,8 @@ import v6_IonClass as Harmonics
 from scipy import signal as sig
 from scipy import optimize as opt
 import v1_TraceVisualizer as ZxxToolkit
+import v1_2D_mass_spectrum_plotter as MSPlotter_2D
+
 
 
 def plot_rayleigh_line(axis_range=[0, 200]):
@@ -375,7 +377,7 @@ class Fragment:
         # Compute uncertainty in charge measurement for the fragment
         self.charge_std = np.std(self.charge_pt_by_pt)
         # 25 IS THE SEGMENT LENGTH...... ONLY VALID IF THIS IS ACCURATE
-        self.charge_uncertainty = self.charge_std / np.sqrt(len(self.trace) / 25)
+        self.charge_uncertainty = self.charge_std / np.sqrt(len(self.trace) / 5)
 
         # Compute uncertainty in charge measurement for the fragment
         try:
@@ -408,12 +410,21 @@ class Fragment:
                 slope_corrected_mass_pt_by_pt.append(self.mass_pt_by_pt[n] - slope * n)
             self.mass_variance_corrected = np.std(slope_corrected_mass_pt_by_pt)
             self.mass_uncertainty_corrected = self.mass_variance_corrected / np.sqrt(len(self.trace) / 25)
-            # plt.plot(self.mass_pt_by_pt)
-            # plt.plot(slope_corrected_mass_pt_by_pt)
+
+            # arr = np.matrix(self.mass_pt_by_pt)
+            # name_string = '/Users/mmcpartlan/Desktop/' + str(self.charge) + 'Da_pt_by_pt.csv'
+            # pd.DataFrame(arr).to_csv(name_string)
+
+            print(self.mass, self.pt_by_pt_mass_slope)
+            # plt.plot(self.charge_pt_by_pt)
+            # plt.plot(slope_corrected_charge_pt_by_pt)
             # plt.plot(self.mass_linfit_equation(range(len(self.trace))))
             # plt.show()
-        except Exception:
-            print("Error calculating corrected mass variance...")
+            # plt.plot(self.energy_eV_pt_by_pt)
+            # plt.plot(self.ev_linfit_equation(range(len(self.trace))))
+            # plt.show()
+        except Exception as e:
+            print("Error calculating corrected mass variance...", e)
 
         self.mass_variance = np.std(self.mass_pt_by_pt)
         # 25 IS THE SEGMENT LENGTH...... ONLY VALID IF THIS IS ACCURATE
@@ -645,7 +656,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -20  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -666,17 +677,17 @@ if __name__ == "__main__":
 
     # Salt and z2/n controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    salt_n = 4
-    salt_MW = 245.2  # LaCl3
+    salt_n = 2
+    # salt_MW = 245.2  # LaCl3
     # salt_MW = 74.5  # KCl
     # salt_MW = 111.1  # CaCl2
-
+    salt_MW = 58.5  # NaCl
 
     # Energy filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # eV / z boundaries... ions cannot physically exist outside a small range of energies. Set that range here
     ev_z_min = 150  # Default 200
-    ev_z_max = 300  # Default 245
+    ev_z_max = 350  # Default 245
 
     # Splitting data by slope controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -691,14 +702,14 @@ if __name__ == "__main__":
 
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_mass = 10 * 1000000  # Maximum mass in MDa (only adjust 1st number)
+    max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
     min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_charge_selection = 350
-    min_charge_selection = 0
+    max_charge_selection = 1000
+    min_charge_selection = 100
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -715,10 +726,8 @@ if __name__ == "__main__":
     filter_by_drops = True
 
 
-    analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "_to_" + str(max_mass / 1000000) + "MDa"
-    # analysis_name = analysis_name + "_" + str(min_charge_selection) + "_to_" + str(max_charge_selection) + "charge"
-    # analysis_name = analysis_name + "_" + str(separation_line_slopes[0]) + "_to_" + str(separation_line_slopes[1]) + "slopes"
-    analysis_name = analysis_name + '.figures'
+    # analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "_to_" + str(max_mass / 1000000) + "MDa"
+    analysis_name = analysis_name + '.pickled'
     try:
         os.mkdir(analysis_name)
     except FileExistsError:
@@ -930,6 +939,8 @@ if __name__ == "__main__":
         dbfile = open(str(analysis_name) + '_2D_mass_spectrum.pickle', 'ab')
         pickle.dump([mass_collection, charge_collection], dbfile)
         dbfile.close()
+        if save_plots:
+            MSPlotter_2D.MSPlotter(folder)
 
     mass_collection_scaled = []
     for mass in mass_collection:

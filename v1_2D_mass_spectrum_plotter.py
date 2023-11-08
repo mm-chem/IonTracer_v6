@@ -39,10 +39,9 @@ def plot_rayleigh_line(axis_range=[0, 200]):
     return m_list, qlist
 
 
-def generate_filelist(termString):
+def generate_filelist(folder, termString):
     # NOTE: folders variable must be a list, even if it is a list of one
     filelist = []
-    folder = fd.askdirectory(title="Choose top folder")
     for root, dirs, files in os.walk(folder):
         for file in files:
             if file.endswith(termString):
@@ -51,7 +50,18 @@ def generate_filelist(termString):
     return filelist
 
 
-if __name__ == "__main__":
+def MSPlotter(folder):
+    folder = folder.rsplit('.', maxsplit=1)[0] + ".pickled"
+    files = generate_filelist(folder, '_mass_spectrum.pickle')
+    analysis_name = folder.rsplit('.', maxsplit=1)[0]
+    new_folder_name = analysis_name.rsplit('/', maxsplit=1)[-1]
+    analysis_name = analysis_name + '.figures/'
+    try:
+        os.mkdir(analysis_name)
+    except FileExistsError:
+        print("Path exists already.")
+    analysis_name = analysis_name + '/' + new_folder_name
+
     SMALL_SIZE = 18
     MEDIUM_SIZE = 21
     BIGGER_SIZE = 24
@@ -67,8 +77,6 @@ if __name__ == "__main__":
     mass_collection = []
     charge_collection = []
 
-    files = generate_filelist('_mass_spectrum.pickle')
-    slope_distributions = []
     for file in files:
         dbfile = open(file, 'rb')
         db = pickle.load(dbfile)
@@ -84,7 +92,7 @@ if __name__ == "__main__":
     rayleigh_x, rayleigh_y = plot_rayleigh_line(axis_range=[0, 200])
     ax.plot(rayleigh_x, rayleigh_y, color='black', linestyle="dashed", linewidth=2)
     heatmap, xedges, yedges = np.histogram2d(mass_collection, charge_collection, bins=[160, 120],
-                                             range=[[0, 8000000], [0, 300]])
+                                             range=[[0, 50000000], [0, 1000]])
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     gaussmap = gaussian_filter(heatmap, 1, mode='nearest')
 
@@ -95,18 +103,24 @@ if __name__ == "__main__":
     ax.set_title("")
     ax.set_xlabel('Mass (MDa)', fontsize=24, weight='bold')
     ax.set_ylabel('Charge', fontsize=24, weight='bold')
-    ax.set_xticks([2000000, 4000000, 6000000, 8000000], ["2", "4", "6", "8"])
+    # ax.set_xticks([2000000, 4000000, 6000000, 8000000], ["2", "4", "6", "8"])
     # ax.set_yticks(hist_charge_bins, hist_charge_labels)
-    ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
-    ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
+    ax.tick_params(axis='x', which='major', labelsize=26, width=3, length=8)
+    ax.tick_params(axis='y', which='major', labelsize=26, width=3, length=8)
     ax.minorticks_on()
-    ax.tick_params(axis='x', which='minor', width=3, length=4)
-    ax.tick_params(axis='y', which='minor', width=3, length=4)
+    ax.tick_params(axis='x', which='minor', width=2, length=4)
+    ax.tick_params(axis='y', which='minor', width=2, length=4)
+    ax.spines['bottom'].set_linewidth(3)
+    ax.spines['left'].set_linewidth(3)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_linewidth(3)
     ax.spines['top'].set_linewidth(3)
 
-    save_path = "/Users/mmcpartlan/Desktop/"
-    plt.savefig(save_path + 'exported_mass_spectrum_2D.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
+    plt.savefig(analysis_name + 'exported_mass_spectrum_2D.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
                 transparent='true')
+
+
+if __name__ == "__main__":
+    folder = fd.askdirectory(title="Choose top folder")
+    MSPlotter(folder)

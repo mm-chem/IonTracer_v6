@@ -20,6 +20,8 @@ from scipy import signal as sig
 from scipy import optimize as opt
 import v1_TraceVisualizer as ZxxToolkit
 import v1_2D_mass_spectrum_plotter as MSPlotter_2D
+import v1_charge_loss_plotter as DropPlotter
+import v1_drops_per_trace_plotter as DropsPerTrace
 
 
 
@@ -691,7 +693,7 @@ if __name__ == "__main__":
 
     # Splitting data by slope controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    separation_line_slopes = [-15, 15]  # Dividing line between slopes... set to zero for no slope separation
+    separation_line_slopes = [-50, 50]  # Dividing line between slopes... set to zero for no slope separation
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Ion existence pre/post emission event controls
@@ -907,36 +909,40 @@ if __name__ == "__main__":
 
 
     if drops_per_trace:
-        dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'wb')
         pickle.dump(drop_counts, dbfile)
         dbfile.close()
+        if save_plots:
+            DropsPerTrace.plotter(folder)
 
     if trace_slope_distribution:
-        dbfile = open(str(analysis_name) + '_slope_dist.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_slope_dist.pickle', 'wb')
         pickle.dump(included_slopes, dbfile)
         dbfile.close()
 
     if f_computed_charge_loss:
-        dbfile = open(str(analysis_name) + '_amp_computed_charge_loss.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_amp_computed_charge_loss.pickle', 'wb')
         pickle.dump(dropsChargeChange, dbfile)
         dbfile.close()
 
-        dbfile = open(str(analysis_name) + '_freq_computed_charge_loss.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_freq_computed_charge_loss.pickle', 'wb')
         pickle.dump(freqComputedChargeLoss, dbfile)
         dbfile.close()
+        if save_plots:
+            DropPlotter.EmissionPlotter(folder)
 
     if C_E_percent_change:
-        dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'wb')
         pickle.dump(delta_C_E_percent, dbfile)
         dbfile.close()
 
     if HAR_eV_distribution:
-        dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'wb')
         pickle.dump([HAR_collection, energy_collection], dbfile)
         dbfile.close()
 
     if mass_spectrum_2D:
-        dbfile = open(str(analysis_name) + '_2D_mass_spectrum.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_2D_mass_spectrum.pickle', 'wb')
         pickle.dump([mass_collection, charge_collection], dbfile)
         dbfile.close()
         if save_plots:
@@ -956,7 +962,7 @@ if __name__ == "__main__":
         for n in range(len(mass_collection)):
             z2_n.append(charge_collection_scaled[n] / mass_collection_scaled[n])
 
-        dbfile = open(str(analysis_name) + '_z2_n.pickle', 'ab')
+        dbfile = open(str(analysis_name) + '_z2_n.pickle', 'wb')
         pickle.dump(z2_n, dbfile)
         dbfile.close()
 

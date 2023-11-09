@@ -10,10 +10,9 @@ from scipy.optimize import curve_fit
 from scipy.ndimage.filters import gaussian_filter
 
 
-def generate_filelist(termString):
+def generate_filelist(folder, termString):
     # NOTE: folders variable must be a list, even if it is a list of one
     filelist = []
-    folder = fd.askdirectory(title="Choose top folder")
     for root, dirs, files in os.walk(folder):
         for file in files:
             if file.endswith(termString):
@@ -22,7 +21,18 @@ def generate_filelist(termString):
     return filelist
 
 
-if __name__ == "__main__":
+def plotter(folder):
+    folder = folder.rsplit('.', maxsplit=1)[0] + ".pickled"
+    files = generate_filelist(folder, '_drops_per_trace.pickle')
+    analysis_name = folder.rsplit('.', maxsplit=1)[0]
+    new_folder_name = analysis_name.rsplit('/', maxsplit=1)[-1]
+    analysis_name = analysis_name + '.figures/'
+    try:
+        os.mkdir(analysis_name)
+    except FileExistsError:
+        print("Path exists already.")
+    analysis_name = analysis_name + '/' + new_folder_name
+
     SMALL_SIZE = 18
     MEDIUM_SIZE = 21
     BIGGER_SIZE = 24
@@ -37,7 +47,6 @@ if __name__ == "__main__":
 
     drop_counts = []
 
-    files = generate_filelist('_drops_per_trace.pickle')
     slope_distributions = []
     for file in files:
         dbfile = open(file, 'rb')
@@ -61,6 +70,10 @@ if __name__ == "__main__":
     ax.spines['top'].set_linewidth(3)
     ax.spines['top'].set_linewidth(3)
 
-    save_path = "/Users/mmcpartlan/Desktop/"
-    plt.savefig(save_path + 'exported_drops_per_trace.png', bbox_inches='tight', dpi=300.0,
+    plt.savefig(analysis_name + 'exported_drops_per_trace.png', bbox_inches='tight', dpi=300.0,
                 transparent='true')
+
+
+if __name__ == "__main__":
+    folder = fd.askdirectory(title="Choose top folder")
+    plotter(folder)

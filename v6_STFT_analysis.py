@@ -55,13 +55,13 @@ def generate_filelist(folders, termString):
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
 export_Zxx_files = False
-export_image_files = True
+export_image_files = False
 
 # Parameters for STFT, indexed for each directory to be analyzed
 voltage_scale = 0.2  # Input range for 16-bit digitizer card
 fs = 1000000  # Sampling frequency in Hz
-segment_length = 10  # Segment length in ms
-step_length = 1  # How many ms to advance the window
+segment_length = 25  # Segment length in ms
+step_length = 5  # How many ms to advance the window
 zerofill = 250  # How many ms worth of data to zerofill
 
 low_freq = 8000  # Lower bound on region of interest

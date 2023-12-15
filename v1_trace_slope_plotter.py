@@ -23,7 +23,7 @@ def generate_filelist(folder, termString):
 
 def plotter(folder):
     folder = folder.rsplit('.', maxsplit=1)[0] + ".pickled"
-    files = generate_filelist(folder, '_drops_per_trace.pickle')
+    files = generate_filelist(folder, '_slope_dist.pickle')
     analysis_name = folder.rsplit('.', maxsplit=1)[0]
     new_folder_name = analysis_name.rsplit('/', maxsplit=1)[-1]
     analysis_name = analysis_name + '.figures/'
@@ -45,19 +45,16 @@ def plotter(folder):
     plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    drop_counts = []
-
-    slope_distributions = []
+    slope_dist = []
     for file in files:
         dbfile = open(file, 'rb')
         db = pickle.load(dbfile)
         for freq in db:
-            drop_counts.append(freq)
+            slope_dist.append(freq)
         dbfile.close()
 
     fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
-    ax.hist(drop_counts, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], align='left', color='black')
-    labels = ["0", "1", "2", "3"]
+    ax.hist(slope_dist, 100, range=[0, 15], color='black')
 
     ax.set_title("")
     ax.set_xlabel('Emission Events per Single Trace', fontsize=24, weight='bold')
@@ -70,7 +67,7 @@ def plotter(folder):
     ax.spines['top'].set_linewidth(3)
     ax.spines['top'].set_linewidth(3)
 
-    plt.savefig(analysis_name + 'exported_drops_per_trace.png', bbox_inches='tight', dpi=300.0,
+    plt.savefig(analysis_name + 'exported_slope_dist.png', bbox_inches='tight', dpi=300.0,
                 transparent='true')
 
 

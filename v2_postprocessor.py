@@ -17,12 +17,13 @@ from tkinter import filedialog as fd
 import v6_STFT_analysis as STFT
 import v6_IonClass as Harmonics
 from scipy import signal as sig
+from scipy import stats as stats
 from scipy import optimize as opt
 import v1_TraceVisualizer as ZxxToolkit
 import v1_2D_mass_spectrum_plotter as MSPlotter_2D
 import v1_charge_loss_plotter as DropPlotter
 import v1_drops_per_trace_plotter as DropsPerTrace
-
+import v1_trace_slope_plotter as TraceSlopeDist
 
 
 def plot_rayleigh_line(axis_range=[0, 200]):
@@ -278,22 +279,28 @@ class Trace:
         f_scaled_noise_limit = self.drop_threshold
         return f_scaled_noise_limit
 
-    def fragment_trace(self):
+    def fragment_trace(self, trigger_source='harm'):
         f_scale_factor = self.trace[0]
         self.drop_threshold = self.drop_threshold_scaler(f_scale_factor)
-        front_truncation = 5
-        differentialTrace = sliding_window_diff(self.trace, 5)
+        front_truncation = 3
+        if trigger_source == 'harm':
+            differentialTrace = sliding_window_diff(self.trace_harm, 1)
+        else:
+            differentialTrace = sliding_window_diff(self.trace, 1)
         self.fragmentation_indices.append(0)
         print('Drop threshold: ', str(self.drop_threshold))
+
         plot = 0
-        past_frag_index = 0
-        min_drop_spacing = 2  # Don't make this determination here... set this as small as possible
-        for index in range(min_drop_spacing, len(differentialTrace) - min_drop_spacing):
-            comparisonSum = sum(differentialTrace[index - min_drop_spacing:index + min_drop_spacing])
-            if comparisonSum < self.drop_threshold and index - past_frag_index >= 3 * min_drop_spacing:
-                self.fragmentation_indices.append(index + min_drop_spacing)
-                past_frag_index = index + min_drop_spacing
-                # plot = 1
+        min_drop_spacing = 5
+        intercept = abs(stats.siegelslopes(differentialTrace)[1])
+        differentialTrace = differentialTrace - intercept
+        peak_indexes, check_prop = sig.find_peaks(-differentialTrace, height=-self.drop_threshold,
+                                                  distance=min_drop_spacing)
+        # plt.plot(-differentialTrace)
+        # plt.show()
+        for index in peak_indexes:
+            self.fragmentation_indices.append(index)
+            # plot = 1
 
         self.fragmentation_indices.append(len(self.trace) - 1)
         # Fragment builder splits the trace up into fragments and creates fragment objects
@@ -322,7 +329,7 @@ class Trace:
                                    self.SPAMM, fragIndices)
                 self.fragments.append(newFrag)
             else:
-                raise IndexError("Fragment start and end overlap")
+                print("Rejected short ion trace.")
 
     def fragment_analyzer(self):
         if len(self.fragments) > 1:
@@ -675,7 +682,7 @@ if __name__ == "__main__":
     plot_1C_loss_scaled_m_z = 0
     # For Emeline's project
     export_no_drop_percent_mass_change = 0
-    z_2_n = 1
+    z_2_n = 0
 
     # Salt and z2/n controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -711,9 +718,8 @@ if __name__ == "__main__":
     # Charge filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_charge_selection = 1000
-    min_charge_selection = 100
+    min_charge_selection = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
     # Drop size filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -727,7 +733,6 @@ if __name__ == "__main__":
     invert_charge_selection = False
     filter_by_drops = True
 
-
     # analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "_to_" + str(max_mass / 1000000) + "MDa"
     analysis_name = analysis_name + '.pickled'
     try:
@@ -736,7 +741,14 @@ if __name__ == "__main__":
         print("Path exists already.")
     analysis_name = analysis_name + '/' + new_folder_name
 
+    fail_count_slope = 0
+    fail_count_mass = 0
+    fail_count_charge = 0
+    fail_count_drop = 0
+    fail_count_energy = 0
+
     traces = []
+    initial_legit_traces = len(traces)
     drops = []
     file_counter = 0
     for file in filelists[0]:
@@ -788,6 +800,7 @@ if __name__ == "__main__":
                 print('Linear fit produced no slope')
 
         drop_found_flag = False
+        flagged_drop = 0
         for drop in trace.drops:
             if not drop_found_flag:
                 # This does NOT cut out other, invalid traces that may be present in the trace.
@@ -797,6 +810,7 @@ if __name__ == "__main__":
                     drop_found_flag = True
                     if invert_charge_selection:
                         include_trace_with_drop = False
+                        flagged_drop = drop.freq_computed_charge_loss
                     else:
                         include_trace_with_drop = True
                 else:
@@ -804,10 +818,12 @@ if __name__ == "__main__":
                         include_trace_with_drop = True
                     else:
                         include_trace_with_drop = False
+                        flagged_drop = drop.freq_computed_charge_loss
         # Catch case where the ion undergoes zero drops... dont want to exclude them!
         if len(trace.drops) < 1 and not invert_charge_selection:
             include_trace_with_drop = True
 
+        noncrit_zero_div_errors = 0
         try:
             avg_charge_frags = avg_charge_frags / fragment_counter
             avg_mass_frags = avg_mass_frags / fragment_counter
@@ -818,27 +834,33 @@ if __name__ == "__main__":
             avg_slope_frags = avg_slope_frags * 10.0e7
         except ZeroDivisionError:
             print("ERROR (noncritical): NO fragments in trace / division by zero")
+            noncrit_zero_div_errors = noncrit_zero_div_errors + 1
 
         # If the trace has a slope that is out of bounds, don't include it
         if separation_line_slopes[0] > avg_slope_frags or avg_slope_frags > separation_line_slopes[1]:
             is_included = False
-            print('Rejected trace: Slope out of bounds')
+            print('Rejected trace: Slope out of bounds (' + str(avg_slope_frags) + ')')
+            fail_count_slope = fail_count_slope + 1
         # If the trace has an avg mass that is out of bounds, don't include it either.
         if min_mass > trace.avg_mass or trace.avg_mass > max_mass:
             is_included = False
-            print('Rejected trace: Mass out of bounds')
+            print('Rejected trace: Mass out of bounds (' + str(trace.avg_mass) + ')')
+            fail_count_mass = fail_count_mass + 1
         # If the trace has an avg charge that is out of bounds, don't include it either.
         if min_charge_selection > trace.avg_charge or trace.avg_charge > max_charge_selection:
             is_included = False
-            print('Rejected trace: Charge out of bounds')
+            print('Rejected trace: Charge out of bounds (' + str(trace.avg_charge) + ')')
+            fail_count_charge = fail_count_charge + 1
         # If the energy ev/z is out of range, do not include it
         if ev_z_min > avg_energy_frags or ev_z_max < avg_energy_frags:
             is_included = False
-            print('Rejected trace: Energy out of bounds')
+            print('Rejected trace: Energy out of bounds (' + str(avg_energy_frags) + ')')
+            fail_count_energy = fail_count_energy + 1
         # If the trace contains a 'suspicious' charge loss (use only for debugging)
         if not include_trace_with_drop and filter_by_drops:
             is_included = False
-            print('Rejected trace: Drop out of bounds')
+            print('Rejected trace: Drop out of bounds (' + str(flagged_drop) + ')')
+            fail_count_drop = fail_count_drop + 1
 
         slope_collection.append(avg_slope_frags)
         if is_included:
@@ -907,7 +929,6 @@ if __name__ == "__main__":
         dropsChargeChange.append(float(drop.delta_charge))
         freqComputedChargeLoss.append(float(drop.freq_computed_charge_loss))
 
-
     if drops_per_trace:
         dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'wb')
         pickle.dump(drop_counts, dbfile)
@@ -919,6 +940,8 @@ if __name__ == "__main__":
         dbfile = open(str(analysis_name) + '_slope_dist.pickle', 'wb')
         pickle.dump(included_slopes, dbfile)
         dbfile.close()
+        if save_plots:
+            TraceSlopeDist.plotter(folder)
 
     if f_computed_charge_loss:
         dbfile = open(str(analysis_name) + '_amp_computed_charge_loss.pickle', 'wb')
@@ -969,6 +992,13 @@ if __name__ == "__main__":
 try:
     print("Selected data includes " + str(len(traces)) + " valid ions and " + str(
         len(drops)) + " recorded emission events.")
+    print("Initial trace count, pre-filtering: " + str(initial_legit_traces))
+    print("Rejected ions based on slope: " + str(fail_count_slope))
+    print("Rejected ions based on mass: " + str(fail_count_mass))
+    print("Rejected ions based on charge: " + str(fail_count_charge))
+    print("Rejected ions based on energy: " + str(fail_count_energy))
+    print("Rejected ions based on f_computed_drop: " + str(fail_count_drop))
+    print("Traces with zero fragments: " + str(noncrit_zero_div_errors))
 
 except Exception:
     print('Called by import...')

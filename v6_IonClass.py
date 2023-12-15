@@ -815,3 +815,4 @@ class IonField:
             ax.spines['top'].set_linewidth(3)
             plt.savefig(save_file_path_full, bbox_inches='tight', dpi=300.0, pad_inches=0.5)
             print("Saved " + str(savedIons) + "/" + str(len(self.ions)) + " paired traces!")
+            plt.close('all')

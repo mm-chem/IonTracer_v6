@@ -248,15 +248,16 @@ class Trace:
             print("Error bridging fragments...", e)
             traceback.print_exc()
 
-    def plot_ion_traces(self, fragLines=None):
+    def plot_ion_traces(self, fragLines=None, harm=None):
         if fragLines is None:
             fragLines = []
         plt.plot(self.trace_indices, self.trace)
         for frag in self.fragments:
             plt.plot(frag.trace_indices, frag.trace)
-        plt.plot(self.trace_indices, self.trace_harm)
-        for element in self.higher_harmonics:
-            plt.plot(element.indices, element.trace, linestyle='dashdot')
+        if harm:
+            plt.plot(self.trace_indices, self.trace_harm)
+            for element in self.higher_harmonics:
+                plt.plot(element.indices, element.trace, linestyle='dashdot')
         for line in fragLines:
             plt.axvline(x=line + self.time_offset, color="green")
         plt.show()
@@ -284,11 +285,11 @@ class Trace:
         self.drop_threshold = self.drop_threshold_scaler(f_scale_factor)
         front_truncation = 3
         if trigger_source == 'harm':
-            differentialTrace = sliding_window_diff(self.trace_harm, 1)
+            differentialTrace = sliding_window_diff(self.trace_harm, 3)
         else:
-            differentialTrace = sliding_window_diff(self.trace, 1)
+            differentialTrace = sliding_window_diff(self.trace, 3)
         self.fragmentation_indices.append(0)
-        print('Drop threshold: ', str(self.drop_threshold))
+        # print('Drop threshold: ', str(self.drop_threshold))
 
         plot = 0
         min_drop_spacing = 5
@@ -296,8 +297,6 @@ class Trace:
         differentialTrace = differentialTrace - intercept
         peak_indexes, check_prop = sig.find_peaks(-differentialTrace, height=-self.drop_threshold,
                                                   distance=min_drop_spacing)
-        # plt.plot(-differentialTrace)
-        # plt.show()
         for index in peak_indexes:
             self.fragmentation_indices.append(index)
             # plot = 1
@@ -309,9 +308,9 @@ class Trace:
         self.fragment_analyzer()
         if plot == 1:
             print(self.fragmentation_indices)
-            self.plot_ion_traces(self.fragmentation_indices)
-            # self.plot_ion_phases(self.fragmentation_indices)
-            # plt.plot(differentialTrace)
+            self.plot_ion_traces(self.fragmentation_indices, )
+            plt.show()
+            plt.plot(-differentialTrace)
             plt.show()
 
     def fragment_builder(self, front_truncation):
@@ -424,7 +423,7 @@ class Fragment:
             # name_string = '/Users/mmcpartlan/Desktop/' + str(self.charge) + 'Da_pt_by_pt.csv'
             # pd.DataFrame(arr).to_csv(name_string)
 
-            print(self.mass, self.pt_by_pt_mass_slope)
+            # print(self.mass, self.pt_by_pt_mass_slope)
             # plt.plot(self.charge_pt_by_pt)
             # plt.plot(slope_corrected_charge_pt_by_pt)
             # plt.plot(self.mass_linfit_equation(range(len(self.trace))))
@@ -641,6 +640,7 @@ if __name__ == "__main__":
     file_count = len(filelists[0])
     analysis_name = folder.rsplit('.', maxsplit=1)[0]
     new_folder_name = analysis_name.rsplit('/', maxsplit=1)[-1]
+    noncrit_zero_div_errors = 0
 
     ################################################################
 
@@ -676,7 +676,7 @@ if __name__ == "__main__":
     delta_2D_mass_charge = 0
     C_E_percent_change = 0
     m_z_drop_1D_spectrum = 0
-    HAR_eV_distribution = 0
+    HAR_eV_distribution = 1
     mass_spectrum_2D = 1
     plot_drop_statistics = 0
     plot_1C_loss_scaled_m_z = 0
@@ -705,14 +705,14 @@ if __name__ == "__main__":
 
     # Ion existence pre/post emission event controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    before_existence_threshold = 25
-    after_existence_threshold = 25
+    before_existence_threshold = 15
+    after_existence_threshold = 15
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
-    min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
+    min_mass = 20 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
@@ -731,9 +731,10 @@ if __name__ == "__main__":
     # STRONGLY suggested to use above tool to manually review traces before excluding them
     # TRUE excludes ions in this range, FALSE excludes ions outside this range
     invert_charge_selection = False
-    filter_by_drops = True
+    filter_by_drops = False
 
-    # analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "_to_" + str(max_mass / 1000000) + "MDa"
+    analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "-" + str(max_mass / 1000000) + "MDa"
+    fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
     try:
         os.mkdir(analysis_name)
@@ -823,7 +824,6 @@ if __name__ == "__main__":
         if len(trace.drops) < 1 and not invert_charge_selection:
             include_trace_with_drop = True
 
-        noncrit_zero_div_errors = 0
         try:
             avg_charge_frags = avg_charge_frags / fragment_counter
             avg_mass_frags = avg_mass_frags / fragment_counter
@@ -934,14 +934,14 @@ if __name__ == "__main__":
         pickle.dump(drop_counts, dbfile)
         dbfile.close()
         if save_plots:
-            DropsPerTrace.plotter(folder)
+            DropsPerTrace.plotter(fig_save_dir)
 
     if trace_slope_distribution:
         dbfile = open(str(analysis_name) + '_slope_dist.pickle', 'wb')
         pickle.dump(included_slopes, dbfile)
         dbfile.close()
         if save_plots:
-            TraceSlopeDist.plotter(folder)
+            TraceSlopeDist.plotter(fig_save_dir)
 
     if f_computed_charge_loss:
         dbfile = open(str(analysis_name) + '_amp_computed_charge_loss.pickle', 'wb')
@@ -952,7 +952,7 @@ if __name__ == "__main__":
         pickle.dump(freqComputedChargeLoss, dbfile)
         dbfile.close()
         if save_plots:
-            DropPlotter.EmissionPlotter(folder)
+            DropPlotter.EmissionPlotter(fig_save_dir)
 
     if C_E_percent_change:
         dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'wb')
@@ -969,7 +969,7 @@ if __name__ == "__main__":
         pickle.dump([mass_collection, charge_collection], dbfile)
         dbfile.close()
         if save_plots:
-            MSPlotter_2D.MSPlotter(folder)
+            MSPlotter_2D.MSPlotter(fig_save_dir)
 
     mass_collection_scaled = []
     for mass in mass_collection:
@@ -992,7 +992,6 @@ if __name__ == "__main__":
 try:
     print("Selected data includes " + str(len(traces)) + " valid ions and " + str(
         len(drops)) + " recorded emission events.")
-    print("Initial trace count, pre-filtering: " + str(initial_legit_traces))
     print("Rejected ions based on slope: " + str(fail_count_slope))
     print("Rejected ions based on mass: " + str(fail_count_mass))
     print("Rejected ions based on charge: " + str(fail_count_charge))

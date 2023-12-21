@@ -109,7 +109,7 @@ def EmissionPlotter(folder):
     ax.spines['bottom'].set_linewidth(3)
     ax.spines['left'].set_linewidth(3)
 
-    plt.savefig(analysis_name + 'exported_amp_computed.png', bbox_inches='tight', dpi=300.0,
+    plt.savefig(analysis_name + 'exported_amp_computed.png', bbox_inches='tight', dpi=300.0, pad_inches=0.5,
                 transparent='true')
 
     fig, ax = plt.subplots(layout='tight', figsize=(7, 5))

@@ -65,7 +65,7 @@ step_length = 5  # How many ms to advance the window
 zerofill = 250  # How many ms worth of data to zerofill
 
 low_freq = 8000  # Lower bound on region of interest
-high_freq = 40000  # Upper bound on region of interest
+high_freq = 60000  # Upper bound on region of interest
 min_trace_charge = 40  # Minimum amplitude to trace (default 25)
 min_trace_length = 5
 time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
@@ -169,7 +169,7 @@ def one_file(file, save_dir):
         tracesHeader = str(low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 8000, 15000)
+            traces.save_png(trace_save_directory, file, 10000, 20000)
 
 
 if __name__ == "__main__":

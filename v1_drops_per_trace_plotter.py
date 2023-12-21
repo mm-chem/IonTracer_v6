@@ -47,13 +47,18 @@ def plotter(folder):
 
     drop_counts = []
 
-    slope_distributions = []
     for file in files:
         dbfile = open(file, 'rb')
         db = pickle.load(dbfile)
         for freq in db:
             drop_counts.append(freq)
         dbfile.close()
+
+    active_ions = 0
+    for ion in drop_counts:
+        if ion != 0:
+            active_ions += 1
+    print("Active ions: ", active_ions)
 
     fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
     ax.hist(drop_counts, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8], align='left', color='black')

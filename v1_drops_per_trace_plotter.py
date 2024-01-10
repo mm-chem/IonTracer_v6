@@ -56,7 +56,7 @@ def plotter(folder):
 
     active_ions = 0
     for ion in drop_counts:
-        if ion != 0:
+        if ion > 0:
             active_ions += 1
     print("Active ions: ", active_ions)
 

@@ -57,9 +57,9 @@ def plotter(folder):
     ax.hist(slope_dist, 100, range=[0, 15], color='black')
 
     ax.set_title("")
-    ax.set_xlabel('Emission Events per Single Trace', fontsize=24, weight='bold')
+    ax.set_xlabel('Scaled Frequency Drift', fontsize=24, weight='bold')
     ax.set_ylabel('Counts', fontsize=24, weight='bold')
-    ax.set_xticks([0, 1, 2, 3, 4, 5, 6, 7, 8])
+    ax.set_xticks([0, 2, 4, 6, 8, 10, 12, 14, 16])
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
     ax.spines['top'].set_visible(False)

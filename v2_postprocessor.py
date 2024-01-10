@@ -466,8 +466,8 @@ class Fragment:
             # Raw Amplitude to Charge Calibration (via BSA calibration curve, may change/improve with more calibration data)
             # Equation--- Charge = (Raw Amplitude + J)/K
             J = 0.0000
-            K = 0.91059  # OLD K VAL
-            # K = 0.8030
+            # K = 0.91059  # OLD K VAL
+            K = 0.8030
             # K = 0.7092     # NOT a valid calibration value, just used for testing
             # K = 0.9999
 
@@ -712,7 +712,7 @@ if __name__ == "__main__":
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
-    min_mass = 20 * 1000000  # Minimum mass in MDa (only adjust 1st number)
+    min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
@@ -733,7 +733,7 @@ if __name__ == "__main__":
     invert_charge_selection = False
     filter_by_drops = False
 
-    analysis_name = analysis_name + "_" + str(min_mass / 1000000) + "-" + str(max_mass / 1000000) + "MDa"
+    analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa"
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
     try:
@@ -873,12 +873,19 @@ if __name__ == "__main__":
             energy_collection.append(avg_energy_frags)
             HAR_collection.append(avg_HAR_frags)
             included_slopes.append(avg_slope_frags)
-            drop_counts.append(len(trace.drops))
             if len(trace.drops) > 0:
+                added_drop = False
                 for element in trace.drops:
                     if element.t_before > before_existence_threshold:
                         if element.t_after > after_existence_threshold:
                             filtered_drops.append(element)
+                            added_drop = True
+                if added_drop:
+                    drop_counts.append(len(trace.drops))
+                else:
+                    drop_counts.append(0)
+            else:
+                drop_counts.append(0)
 
     traces = filtered_traces
     drops = filtered_drops
@@ -928,6 +935,21 @@ if __name__ == "__main__":
 
         dropsChargeChange.append(float(drop.delta_charge))
         freqComputedChargeLoss.append(float(drop.freq_computed_charge_loss))
+
+    try:
+        print("========= START FAILURE ANALYSIS ==========")
+        print("Selected data includes " + str(len(traces)) + " valid ions and " + str(
+            len(drops)) + " recorded emission events.")
+        print("Rejected ions based on slope: " + str(fail_count_slope))
+        print("Rejected ions based on mass: " + str(fail_count_mass))
+        print("Rejected ions based on charge: " + str(fail_count_charge))
+        print("Rejected ions based on energy: " + str(fail_count_energy))
+        print("Rejected ions based on f_computed_drop: " + str(fail_count_drop))
+        print("Traces with zero-length fragments: " + str(noncrit_zero_div_errors))
+        print("========= END FAILURE ANALYSIS ==========")
+
+    except Exception:
+        print('Called by import...')
 
     if drops_per_trace:
         dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'wb')
@@ -989,15 +1011,3 @@ if __name__ == "__main__":
         pickle.dump(z2_n, dbfile)
         dbfile.close()
 
-try:
-    print("Selected data includes " + str(len(traces)) + " valid ions and " + str(
-        len(drops)) + " recorded emission events.")
-    print("Rejected ions based on slope: " + str(fail_count_slope))
-    print("Rejected ions based on mass: " + str(fail_count_mass))
-    print("Rejected ions based on charge: " + str(fail_count_charge))
-    print("Rejected ions based on energy: " + str(fail_count_energy))
-    print("Rejected ions based on f_computed_drop: " + str(fail_count_drop))
-    print("Traces with zero fragments: " + str(noncrit_zero_div_errors))
-
-except Exception:
-    print('Called by import...')

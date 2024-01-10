@@ -59,7 +59,7 @@ export_image_files = True
 
 # Parameters for STFT, indexed for each directory to be analyzed
 voltage_scale = 0.2  # Input range for 16-bit digitizer card
-fs = 1000000  # Sampling frequency in Hz
+fs = 5000000  # Sampling frequency in Hz
 segment_length = 25  # Segment length in ms
 step_length = 5  # How many ms to advance the window
 zerofill = 250  # How many ms worth of data to zerofill

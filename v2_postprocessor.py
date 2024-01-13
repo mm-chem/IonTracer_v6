@@ -24,6 +24,7 @@ import v1_2D_mass_spectrum_plotter as MSPlotter_2D
 import v1_charge_loss_plotter as DropPlotter
 import v1_drops_per_trace_plotter as DropsPerTrace
 import v1_trace_slope_plotter as TraceSlopeDist
+import v1_eV_per_charge_plotter as EnergyPlotter
 
 
 def plot_rayleigh_line(axis_range=[0, 200]):
@@ -678,7 +679,7 @@ if __name__ == "__main__":
     m_z_drop_1D_spectrum = 0
     HAR_eV_distribution = 1
     mass_spectrum_2D = 1
-    plot_drop_statistics = 0
+    plot_drop_statistics = 1
     plot_1C_loss_scaled_m_z = 0
     # For Emeline's project
     export_no_drop_percent_mass_change = 0
@@ -695,8 +696,8 @@ if __name__ == "__main__":
     # Energy filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # eV / z boundaries... ions cannot physically exist outside a small range of energies. Set that range here
-    ev_z_min = 150  # Default 200
-    ev_z_max = 350  # Default 245
+    ev_z_min = 195  # Default 200
+    ev_z_max = 275  # Default 245
 
     # Splitting data by slope controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -712,7 +713,7 @@ if __name__ == "__main__":
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
-    min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
+    min_mass = 2 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
@@ -721,19 +722,17 @@ if __name__ == "__main__":
     min_charge_selection = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+    # HAR Allowed: 1.65 - 2.55
+
     # Drop size filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # If we only want to look at traces that contain a drop in a specific size range, define that range here
     # Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
     min_drop_search_boundary = -20
-    max_drop_search_boundary = -0.55
-    # If we want to exclude traces that have erroneously small drops, do that here
-    # STRONGLY suggested to use above tool to manually review traces before excluding them
-    # TRUE excludes ions in this range, FALSE excludes ions outside this range
-    invert_charge_selection = False
-    filter_by_drops = False
+    max_drop_search_boundary = 20
 
-    analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa"
+    # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa"
+    analysis_name = analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) + "_drops"
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
     try:
@@ -784,7 +783,6 @@ if __name__ == "__main__":
         avg_energy_frags = 0
         avg_HAR_frags = 0
         avg_slope_frags = 0
-        include_trace_with_drop = False  # For debugging... try to find out why there is a peak at 0
 
         for fragment in trace.fragments:
             # Average the mass, charge, HAR, energy, and m/z of all fragments in a trace
@@ -799,30 +797,6 @@ if __name__ == "__main__":
                         fragment.linfitEquation.coefficients[0] ** 2 / fragment.linfitEquation.coefficients[1] ** 2)
             except Exception as e:
                 print('Linear fit produced no slope')
-
-        drop_found_flag = False
-        flagged_drop = 0
-        for drop in trace.drops:
-            if not drop_found_flag:
-                # This does NOT cut out other, invalid traces that may be present in the trace.
-                # This filter keeps traces that contain at least one drop of interest but
-                # does not keep track of the drops after making this determination.
-                if min_drop_search_boundary < drop.freq_computed_charge_loss < max_drop_search_boundary:
-                    drop_found_flag = True
-                    if invert_charge_selection:
-                        include_trace_with_drop = False
-                        flagged_drop = drop.freq_computed_charge_loss
-                    else:
-                        include_trace_with_drop = True
-                else:
-                    if invert_charge_selection:
-                        include_trace_with_drop = True
-                    else:
-                        include_trace_with_drop = False
-                        flagged_drop = drop.freq_computed_charge_loss
-        # Catch case where the ion undergoes zero drops... dont want to exclude them!
-        if len(trace.drops) < 1 and not invert_charge_selection:
-            include_trace_with_drop = True
 
         try:
             avg_charge_frags = avg_charge_frags / fragment_counter
@@ -856,11 +830,6 @@ if __name__ == "__main__":
             is_included = False
             print('Rejected trace: Energy out of bounds (' + str(avg_energy_frags) + ')')
             fail_count_energy = fail_count_energy + 1
-        # If the trace contains a 'suspicious' charge loss (use only for debugging)
-        if not include_trace_with_drop and filter_by_drops:
-            is_included = False
-            print('Rejected trace: Drop out of bounds (' + str(flagged_drop) + ')')
-            fail_count_drop = fail_count_drop + 1
 
         slope_collection.append(avg_slope_frags)
         if is_included:
@@ -878,8 +847,9 @@ if __name__ == "__main__":
                 for element in trace.drops:
                     if element.t_before > before_existence_threshold:
                         if element.t_after > after_existence_threshold:
-                            filtered_drops.append(element)
-                            added_drop = True
+                            if min_drop_search_boundary < element.freq_computed_charge_loss < max_drop_search_boundary:
+                                filtered_drops.append(element)
+                                added_drop = True
                 if added_drop:
                     drop_counts.append(len(trace.drops))
                 else:
@@ -887,6 +857,7 @@ if __name__ == "__main__":
             else:
                 drop_counts.append(0)
 
+    fail_count_drop = len(drops) - len(filtered_drops)
     traces = filtered_traces
     drops = filtered_drops
 
@@ -949,7 +920,7 @@ if __name__ == "__main__":
         print("========= END FAILURE ANALYSIS ==========")
 
     except Exception:
-        print('Called by import...')
+        print('Missing some random variable in text output...')
 
     if drops_per_trace:
         dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'wb')
@@ -982,9 +953,11 @@ if __name__ == "__main__":
         dbfile.close()
 
     if HAR_eV_distribution:
-        dbfile = open(str(analysis_name) + '_CE_percent_change.pickle', 'wb')
+        dbfile = open(str(analysis_name) + '_HAR_eV_aggregated.pickle', 'wb')
         pickle.dump([HAR_collection, energy_collection], dbfile)
         dbfile.close()
+        if save_plots:
+            EnergyPlotter.plotter(fig_save_dir)
 
     if mass_spectrum_2D:
         dbfile = open(str(analysis_name) + '_2D_mass_spectrum.pickle', 'wb')
@@ -1010,4 +983,3 @@ if __name__ == "__main__":
         dbfile = open(str(analysis_name) + '_z2_n.pickle', 'wb')
         pickle.dump(z2_n, dbfile)
         dbfile.close()
-

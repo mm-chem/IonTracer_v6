@@ -227,6 +227,8 @@ class Trace:
         try:
             startFreq = frag1.linfitEquation(new_drop_point)
             endFreq = frag2.linfitEquation(new_drop_point)
+            harmInitFreq = frag1.harmLinfitEquation(new_drop_point)
+            harmFinalFreq = frag2.harmLinfitEquation(new_drop_point)
             startMag = frag1.avg_mag
             endMag = frag2.avg_mag
             startCharge = frag1.charge
@@ -243,7 +245,7 @@ class Trace:
             folder = self.folder
             newDrop = Drop(startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final,
                            t_before, t_after, start_mass, end_mass, fundamental_trace, drop_index,
-                           trace_indices, folder)
+                           trace_indices, folder, harmInitFreq, harmFinalFreq)
             self.drops.append(newDrop)
         except Exception as e:
             print("Error bridging fragments...", e)
@@ -378,9 +380,11 @@ class Fragment:
         self.mass = None
         self.charge = None
         self.linfitEquation = None
+        self.harmLinfitEquation = None
         self.x_axis = np.linspace(self.fragStart, self.fragEnd, len(self.trace))
 
         self.lin_fit_frag()
+        self.lin_fit_frag_harm()
         self.magic()
 
         # Compute uncertainty in charge measurement for the fragment
@@ -446,9 +450,16 @@ class Fragment:
         else:
             print("Unable to fit line of " + str(len(self.trace)))
 
+    def lin_fit_frag_harm(self):
+        if len(self.harm_trace) > 1:
+            fit = np.polyfit(self.x_axis, self.harm_trace, 1)
+            self.harmLinfitEquation = np.poly1d(fit)
+        else:
+            print("Unable to fit line of " + str(len(self.harm_trace)))
+
     def magic(self):
         if self.SPAMM == 2:
-            trap_V = 330  # trapping cones potential
+            trap_V = 336.1  # trapping cones potential
 
             # Trap Potential/Ion eV/z ratio to energy calibration (all trap potentials)
             # Equation---Energy =Trap/(A*TTR^3 + B*TTR^2 + C*TTR + D)
@@ -468,7 +479,8 @@ class Fragment:
             # Equation--- Charge = (Raw Amplitude + J)/K
             J = 0.0000
             # K = 0.91059  # OLD K VAL
-            K = 0.8030
+            K = 0.9000  # K-VAL calibrated from AAV9s on Jan 16, 2024
+            # K = 0.81799  # K VAL from 4/22 (calibrated by Zach)
             # K = 0.7092     # NOT a valid calibration value, just used for testing
             # K = 0.9999
 
@@ -558,22 +570,17 @@ class Fragment:
             self.charge_pt_by_pt.append(uncorrected_charge * corr_factors)
             self.mass_pt_by_pt.append(self.m_z_pt_by_pt[-1] * self.charge_pt_by_pt[-1])
 
-        TTR_from_HAR = E * self.HAR ** 3 + F * self.HAR ** 2 + G * self.HAR + H
-        self.energy_eV = trap_V / (A * TTR_from_HAR ** 3 + B * TTR_from_HAR ** 2 + C * TTR_from_HAR + D)
-        self.C_E = (A00 + A10 * self.energy_eV + A01 * trap_V + A20 * self.energy_eV ** 2 + A11 * self.energy_eV *
-                    trap_V + A02 * trap_V ** 2 + A30 * self.energy_eV ** 3 + A21 * self.energy_eV ** 2 * trap_V +
-                    A12 * self.energy_eV * trap_V ** 2 + A03 * trap_V ** 3) ** 2
-
-        self.m_z = self.C_E / self.avg_freq ** 2
-        uncorrected_charge = (self.avg_mag + J) / K  # calibration from BSA charge states
-        corr_factors = 1 / (L * TTR_from_HAR + M)
-        self.charge = uncorrected_charge * corr_factors
-        self.mass = self.m_z * self.charge
+        self.energy_eV = np.average(self.energy_eV_pt_by_pt)
+        self.C_E = np.average(self.C_E_pt_by_pt)
+        self.m_z = np.average(self.m_z_pt_by_pt)
+        self.charge = np.average(self.charge_pt_by_pt)
+        self.mass = np.average(self.mass_pt_by_pt)
 
 
 class Drop:
     def __init__(self, startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final, t_before,
-                 t_after, start_mass, end_mass, fundamental_trace, drop_index, trace_indices, folder):
+                 t_after, start_mass, end_mass, fundamental_trace, drop_index, trace_indices, folder, harmInitFreq,
+                 harmFinalFreq):
         # Used to filter out super short drops from analyis
         self.fundamental_trace = fundamental_trace
         self.folder = folder
@@ -596,6 +603,7 @@ class Drop:
         self.initialFreq = startFreq
         self.finalFreq = endFreq
         self.f_squared_ratio_change = (startFreq ** 2) / (endFreq ** 2)
+        self.f_squared_ratio_change = (harmInitFreq ** 2) / (harmFinalFreq ** 2)
         self.freq_computed_charge_loss = -(self.f_squared_ratio_change - 1) * self.avg_charge
 
         # Lets figure out what m/z change this drop accounts for...
@@ -666,7 +674,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -20  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -713,7 +721,7 @@ if __name__ == "__main__":
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
-    min_mass = 2 * 1000000  # Minimum mass in MDa (only adjust 1st number)
+    min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
@@ -731,8 +739,8 @@ if __name__ == "__main__":
     min_drop_search_boundary = -20
     max_drop_search_boundary = 20
 
-    # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa"
-    analysis_name = analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) + "_drops"
+    analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
+    # analysis_name = analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) + "_drops"
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
     try:

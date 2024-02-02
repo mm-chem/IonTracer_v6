@@ -22,7 +22,7 @@ if __name__ == "__main__":
         all_ions_HARs = []
         all_ions_lmparams = []
 
-        p = Pool(8)
+        p = Pool(2)
         # STFT.one_file is function defined in STFT_analysis
         zipStruct = zip(filelist, [savedir] * len(filelist))
         all_results = p.starmap(STFT.one_file, zipStruct)

@@ -87,7 +87,7 @@ class ZxxBackdrop:
         ax.set_xlabel('Time (ms)', fontsize=24, weight='bold')
         ax.set_ylabel('Frequency (Hz)', fontsize=24, weight='bold')
         ax.set_xticks([50, 100, 150], ["250", "500", "750"])
-        ax.set_yticks([14250, 14500, 14750, 15000, 15250])
+        ax.set_yticks([13000, 13250, 13500, 13750, 14000])
         # ax.set_yticks([13000, 13250, 13500, 13750])
         ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
         ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
@@ -153,5 +153,5 @@ if __name__ == "__main__":
               + ' Hz/s Drift' + ' --- Avg Mass: ' + str(trace.avg_mass) + ' Da'
               + ' --- Avg Charge: ' + str(trace.avg_charge))
 
-    ZxxFoundation.plot_all_traces_on_Zxx(14000, 15500, plot_trace_overlay=False, include_harmonics=False)
+    ZxxFoundation.plot_all_traces_on_Zxx(12750, 14250, plot_trace_overlay=False, include_harmonics=False)
     # ZxxFoundation.plot_all_traces_on_Zxx(12750, 14000, plot_trace_overlay=False, include_harmonics=False)

@@ -112,12 +112,13 @@ def sliding_window_diff(trace, width, step=1):
 
 
 class Trace:
-    def __init__(self, filePath, spamm, drop_threshold):
+    def __init__(self, filePath, spamm, drop_threshold, UTID):
         self.SPAMM = spamm
         self.avg_slope = 0
         self.Zxx_background = []
         self.folder = filePath.rsplit('\\', 1)[0]
         self.file = filePath.rsplit('\\', 1)[-1]
+        self.UTID = UTID
         self.higher_harmonics = []
         self.trace = []
         self.trace_magnitudes = []
@@ -217,7 +218,7 @@ class Trace:
             counter += 1
         self.avg_slope = slope_sum / counter
 
-    def bridge_fragments(self, frag1, frag2):
+    def bridge_fragments(self, frag1, frag2, drop_counter):
         gap_length = frag2.fragStart - frag1.fragEnd
         new_drop_point = frag1.fragEnd + np.floor(gap_length / 2)
         frag1.fragEnd = new_drop_point
@@ -243,9 +244,10 @@ class Trace:
             drop_index = frag1.fragEnd
             trace_indices = self.trace_indices
             folder = self.folder
+            UDID = str(self.UTID) + "d" + str(drop_counter)
             newDrop = Drop(startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final,
                            t_before, t_after, start_mass, end_mass, fundamental_trace, drop_index,
-                           trace_indices, folder, harmInitFreq, harmFinalFreq)
+                           trace_indices, folder, harmInitFreq, harmFinalFreq, self.UTID, UDID)
             self.drops.append(newDrop)
         except Exception as e:
             print("Error bridging fragments...", e)
@@ -317,6 +319,7 @@ class Trace:
             plt.show()
 
     def fragment_builder(self, front_truncation):
+        fragment_counter = 0
         for i in range(len(self.fragmentation_indices) - 1):
             fragStart = self.fragmentation_indices[i] + int(front_truncation)
             fragEnd = self.fragmentation_indices[i + 1]
@@ -327,8 +330,10 @@ class Trace:
                 harmFragTrace = self.trace_harm[fragStart:fragEnd]
                 fragMag = self.trace_magnitudes[fragStart:fragEnd]
                 harmFragMag = self.trace_magnitudes_harm[fragStart:fragEnd]
+                UFID = int(str(self.UTID) + str(fragment_counter))
                 newFrag = Fragment(fragTrace, harmFragTrace, fragMag, harmFragMag, fragStart, fragEnd,
-                                   self.SPAMM, fragIndices)
+                                   self.SPAMM, fragIndices, self.UTID, UFID)
+                fragment_counter = fragment_counter + 1
                 self.fragments.append(newFrag)
             else:
                 print("Rejected short ion trace.")
@@ -336,11 +341,13 @@ class Trace:
     def fragment_analyzer(self):
         if len(self.fragments) > 1:
             useful_fragments = []
+            drop_counter = 0
             for i in range(len(self.fragments) - 1):
                 delta_x = self.fragments[i + 1].fragStart - self.fragments[i].fragEnd
                 # # Should be in BINS (ideally)
                 if delta_x <= 5:
-                    self.bridge_fragments(self.fragments[i], self.fragments[i + 1])
+                    self.bridge_fragments(self.fragments[i], self.fragments[i + 1], drop_counter)
+                    drop_counter = drop_counter + 1
                     useful_fragments.append(self.fragments[i])
                     if i == len(self.fragments) - 2:
                         # Add the last fragment too (if we are at the end of the line)
@@ -349,7 +356,10 @@ class Trace:
 
 
 class Fragment:
-    def __init__(self, fragTrace, harmFragTrace, fragMag, harmFragMag, fragStart, fragEnd, spamm, trace_indices):
+    def __init__(self, fragTrace, harmFragTrace, fragMag, harmFragMag, fragStart, fragEnd, spamm, trace_indices,
+                 UTID, UFID):
+        self.UTID = UTID
+        self.UFID = UFID
         self.charge_pt_by_pt = []
         self.mass_pt_by_pt = []
         self.HAR_pt_by_pt = []
@@ -580,8 +590,10 @@ class Fragment:
 class Drop:
     def __init__(self, startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final, t_before,
                  t_after, start_mass, end_mass, fundamental_trace, drop_index, trace_indices, folder, harmInitFreq,
-                 harmFinalFreq):
+                 harmFinalFreq, UTID, UDID):
         # Used to filter out super short drops from analyis
+        self.UDID = UDID
+        self.UTID = UTID
         self.fundamental_trace = fundamental_trace
         self.folder = folder
         self.trace_indices = trace_indices
@@ -674,7 +686,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -20  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -714,8 +726,8 @@ if __name__ == "__main__":
 
     # Ion existence pre/post emission event controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    before_existence_threshold = 15
-    after_existence_threshold = 15
+    before_existence_threshold = 25
+    after_existence_threshold = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Mass filter controls
@@ -734,13 +746,14 @@ if __name__ == "__main__":
 
     # Drop size filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # If we only want to look at traces that contain a drop in a specific size range, define that range here
-    # Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
-    min_drop_search_boundary = -20
-    max_drop_search_boundary = 20
+    # If we only want to look at traces that contain a drop in a specific size range (in freq-computed range),
+    # define that range here. Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
+    min_drop_search_boundary = -4
+    max_drop_search_boundary = -2
 
-    analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
-    # analysis_name = analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) + "_drops"
+    # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
+    analysis_name = (analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) +
+                     "_drops_" + str(before_existence_threshold) + "_spacing_" + str(drop_threshold) + "_threshold")
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
     try:
@@ -761,7 +774,7 @@ if __name__ == "__main__":
     file_counter = 0
     for file in filelists[0]:
         print("Processing file " + str(file_counter) + " of " + str(file_count))
-        newTrace = Trace(file, SPAMM, drop_threshold=drop_threshold)
+        newTrace = Trace(file, SPAMM, drop_threshold, file_counter)
         file_counter = file_counter + 1
         traces.append(newTrace)
         if len(newTrace.drops) > 0:

@@ -180,7 +180,8 @@ class Ion:
 
 
 class IonField:
-    def __init__(self, f_offset, t_offset, min_trace_length, time_correlation_tolerance, freq_correlation_tolerance, step_length, window_length):
+    def __init__(self, f_offset, t_offset, min_trace_length, time_correlation_tolerance, freq_correlation_tolerance,
+                 step_length, window_length):
         self.f_range_offset = f_offset
         self.t_range_offset = t_offset
         self.step_length = step_length
@@ -769,7 +770,7 @@ class IonField:
                         save_file_path_full.write_text(writeString)
             print("Saved " + str(savedIons) + "/" + str(len(self.ions)) + " paired traces!")
 
-    def save_png(self, save_file_folder, file, min_freq, max_freq):
+    def save_png(self, save_file_folder, file, min_freq, max_freq, harm=False):
         Zxx = np.flipud(np.rot90(np.array(self.sliceRecord)))
         # Assumes files are named with xxxxx.B.txt convention
         if len(self.paired_ions) > 0:
@@ -778,7 +779,10 @@ class IonField:
             save_file_folder = save_file_folder / source_file_name
             save_file_folder.mkdir(exist_ok=True, parents=True)
             savedIons = 0
-            save_file_name = source_file_name + "_Zxx" + ".png"
+            if harm:
+                save_file_name = source_file_name + "_Zxx_harm" + ".png"
+            else:
+                save_file_name = source_file_name + "_Zxx" + ".png"
             save_file_path_full = save_file_folder / save_file_name
 
             fig, ax = plt.subplots(layout='tight', figsize=(13, 6.5))
@@ -815,4 +819,5 @@ class IonField:
             ax.spines['top'].set_linewidth(3)
             plt.savefig(save_file_path_full, bbox_inches='tight', dpi=300.0, pad_inches=0.5)
             print("Saved " + str(savedIons) + "/" + str(len(self.ions)) + " paired traces!")
+            plt.close('all')
             plt.close('all')

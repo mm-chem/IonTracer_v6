@@ -54,8 +54,8 @@ def generate_filelist(folders, termString):
 
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
-export_Zxx_files = False
-export_image_files = False
+export_Zxx_files = True
+export_image_files = True
 
 # Parameters for STFT, indexed for each directory to be analyzed
 voltage_scale = 0.2  # Input range for 16-bit digitizer card
@@ -169,7 +169,7 @@ def one_file(file, save_dir):
         tracesHeader = str(low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 10000, 20000)
+            traces.save_png(trace_save_directory, file, 13500, 15000)
 
 
 if __name__ == "__main__":

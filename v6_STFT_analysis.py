@@ -7,6 +7,7 @@ from tkinter import filedialog as fd
 from scipy import signal as sig
 import v6_IonClass as ionTracer
 import warnings
+import json
 
 warnings.filterwarnings('ignore')
 
@@ -54,41 +55,56 @@ def generate_filelist(folders, termString):
 
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
-export_Zxx_files = True
+export_Zxx_files = False
 export_image_files = True
 
-# Parameters for STFT, indexed for each directory to be analyzed
-voltage_scale = 0.2  # Input range for 16-bit digitizer card
-fs = 1000000  # Sampling frequency in Hz
-segment_length = 25  # Segment length in ms
-step_length = 5  # How many ms to advance the window
-zerofill = 250  # How many ms worth of data to zerofill
 
-low_freq = 8000  # Lower bound on region of interest
-high_freq = 60000  # Upper bound on region of interest
-min_trace_charge = 25  # Minimum amplitude to trace (default 25)
-min_trace_length = 5
-time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
-freq_correlation_tolerance = 1000  # In Hz on the y-axis. How close do trace fragments need to be - direction ONLY
-max_positive_slope = 50  # In Hz
-max_negative_slope = -200  # In Hz, how much can points in ONE FRAGMENT differ
+class AnalConfig:
+    def __init__(self, SPAMM=2):
+        # Parameters for STFT, indexed for each directory to be analyzed
+        # Input range for 16-bit digitizer card
+        if SPAMM == 3:
+            self.voltage_scale = 0.04
+        else:
+            self.voltage_scale = 0.2
+        self.fs = 1000000  # Sampling frequency in Hz
+        self.segment_length = 25  # Segment length in ms
+        self.step_length = 5  # How many ms to advance the window
+        self.zerofill = 250  # How many ms worth of data to zerofill
+
+        self.low_freq = 5000  # Lower bound on region of interest
+        self.high_freq = 30000  # Upper bound on region of interest
+        self.min_trace_charge = 100  # Minimum amplitude to trace (default 25)
+        self.min_trace_length = 5
+        self.time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
+        self.freq_correlation_tolerance = 1000  # In Hz on the y-axis. How close do trace fragments need to be - direction ONLY
+        self.max_positive_slope = 50  # In Hz
+        self.max_negative_slope = -2000  # In Hz, how much can points in ONE FRAGMENT differ
+
+    def write_cfg_file(self, path):
+        path = path + '/config.utils'
+        with open(path, 'w') as f:
+            f.write(''.join(["cfg.%s = %s\n" % (k, v) for k, v in self.__dict__.items()]))
+
+
+cfg = AnalConfig(SPAMM=3)
 
 harm_pairing_threshold = 75  # In Hz (maximum deviation for a trace to be considered a harmonic)
 check_start = 100  # Start check at x ms
 check_length = 100  # ms length of checking transform
 magnitude_to_charge_factor = 682500  # Magic number to convert amplitude to approximate charge
-pts_per_seg = fs * (segment_length / 1000)  # Points per FT segment
-zerofill_pts = fs * (zerofill / 1000)  # Zerofill points added per segment
-pts_per_step = fs * (step_length / 1000)  # Points to move the window ahead by
-f_reso = fs / zerofill_pts  # Zero-filled resolution, not true resolution
+pts_per_seg = cfg.fs * (cfg.segment_length / 1000)  # Points per FT segment
+zerofill_pts = cfg.fs * (cfg.zerofill / 1000)  # Zerofill points added per segment
+pts_per_step = cfg.fs * (cfg.step_length / 1000)  # Points to move the window ahead by
+f_reso = cfg.fs / zerofill_pts  # Zero-filled resolution, not true resolution
 min_trace_spacing = 4 * f_reso  # Hz (allowed between peaks in checkFFT and STFT without culling the smaller one)
-freq_correlation_tolerance = freq_correlation_tolerance / f_reso  # Converted to bins now
-pts_per_check = fs * (check_length / 1000)  # Points in the spot check section
-f_reso_check = fs / pts_per_check
-low_freq_pts = int(low_freq / f_reso)
-high_freq_pts = int(high_freq / f_reso)
-harm_low_freq = low_freq * 2
-harm_high_freq = high_freq * 2
+freq_correlation_tolerance = cfg.freq_correlation_tolerance / f_reso  # Converted to bins now
+pts_per_check = cfg.fs * (check_length / 1000)  # Points in the spot check section
+f_reso_check = cfg.fs / pts_per_check
+low_freq_pts = int(cfg.low_freq / f_reso)
+high_freq_pts = int(cfg.high_freq / f_reso)
+harm_low_freq = cfg.low_freq * 2
+harm_high_freq = cfg.high_freq * 2
 harm_low_freq_pts = int(harm_low_freq / f_reso)
 harm_high_freq_pts = int(harm_high_freq / f_reso)
 culling_dist_samps = min_trace_spacing / f_reso
@@ -102,29 +118,30 @@ def one_file(file, save_dir):
     print(file)
 
     data_bits = np.fromfile(file, dtype=np.uint16)  # Import file
-    data_volts = ((voltage_scale / 66536) * 2 * data_bits) - voltage_scale  # Convert from uint16 to volts
-    data_volts_nopulse = data_volts[step_length * int(fs / 1000) + 702:]  # Cut out trap pulse at beginning
-    max_time = (len(data_volts_nopulse) / fs) * 1000  # Signal length after cutting out pulse
+    data_volts = ((cfg.voltage_scale / 66536) * 2 * data_bits) - cfg.voltage_scale  # Convert from uint16 to volts
+    data_volts_nopulse = data_volts[cfg.step_length * int(cfg.fs / 1000) + 702:]  # Cut out trap pulse at beginning
+    max_time = (len(data_volts_nopulse) / cfg.fs) * 1000  # Signal length after cutting out pulse
 
     ################################################################################################################
     # Calculate the check section to estimate ion presence
     ################################################################################################################
-    check_part = sig.detrend(data_volts_nopulse[int(fs * check_start / 1000):
-                                                int(fs * (check_start + check_length) / 1000)], type='constant')
+    check_part = sig.detrend(data_volts_nopulse[int(cfg.fs * check_start / 1000):
+                                                int(cfg.fs * (check_start + check_length) / 1000)], type='constant')
 
     check_spec = np.fft.fft(check_part, n=int(pts_per_check))
     check_magnitude = np.abs(check_spec) * magnitude_to_charge_factor
     # Only look at freqs of interest. Apply 1/N scaling to amplitude (not in DFT equation)
-    magnitude_slice = check_magnitude[int(low_freq / f_reso_check):int(high_freq / f_reso_check)] / pts_per_check
+    magnitude_slice = check_magnitude[
+                      int(cfg.low_freq / f_reso_check):int(cfg.high_freq / f_reso_check)] / pts_per_check
 
     # Pick peaks out, then analyze the whole file if there is anything there
     sep_distance = min_trace_spacing / f_reso_check
     if sep_distance < 1:
         sep_distance = 1
 
-    peak_indexes, check_prop = sig.find_peaks(magnitude_slice, height=min_trace_charge,
+    peak_indexes, check_prop = sig.find_peaks(magnitude_slice, height=cfg.min_trace_charge,
                                               distance=sep_distance)
-    check_peaks = peak_indexes * f_reso_check + low_freq
+    check_peaks = peak_indexes * f_reso_check + cfg.low_freq
     print("Resolution: " + str(f_reso))
 
     if check_peaks.size:
@@ -133,20 +150,21 @@ def one_file(file, save_dir):
         # Calculate STFT and trace the full file....
         ################################################################################################################
         f, t, Zxx = sig.stft(data_volts_nopulse, window='hamming', detrend='constant',
-                             fs=fs, nperseg=int(pts_per_seg), nfft=int(zerofill_pts),
+                             fs=cfg.fs, nperseg=int(pts_per_seg), nfft=int(zerofill_pts),
                              noverlap=int(pts_per_seg - pts_per_step))
 
         STFT = np.abs(Zxx) * magnitude_to_charge_factor
         STFT_phase = np.angle(Zxx, deg=True)
         STFT_cut = STFT[low_freq_pts:high_freq_pts]
         STFT_cut_phase = STFT_phase[low_freq_pts:high_freq_pts]
-        pick_time_full = np.arange(0, max_time / step_length)
-        pick_time_pts = pick_time_full[int(0.6 + (segment_length / 2) / step_length):-int(
-            0.6 + (segment_length / 2) / step_length)]  # cut one half seg +1 from each edge
+        pick_time_full = np.arange(0, max_time / cfg.step_length)
+        pick_time_pts = pick_time_full[int(0.6 + (cfg.segment_length / 2) / cfg.step_length):-int(
+            0.6 + (cfg.segment_length / 2) / cfg.step_length)]  # cut one half seg +1 from each edge
 
         starting_t = pick_time_pts[0]
-        traces = ionTracer.IonField(low_freq, starting_t, min_trace_length,
-                                    time_correlation_tolerance, freq_correlation_tolerance, step_length, segment_length)
+        traces = ionTracer.IonField(cfg.low_freq, starting_t, cfg.min_trace_length,
+                                    cfg.time_correlation_tolerance, freq_correlation_tolerance, cfg.step_length,
+                                    cfg.segment_length)
 
         ################################################################################################################
         # Ion Tracing / Post-Processing
@@ -156,8 +174,9 @@ def one_file(file, save_dir):
             print("Calculating slice: ", t)
             current_slice = STFT_cut[:, int(t)]
             current_slice_phase = STFT_cut_phase[:, int(t)]
-            traces.ion_hunter(current_slice, current_slice_phase, int(t), min_trace_charge, min_trace_spacing, f_reso,
-                              max_positive_slope, max_negative_slope)
+            traces.ion_hunter(current_slice, current_slice_phase, int(t), cfg.min_trace_charge, min_trace_spacing,
+                              f_reso,
+                              cfg.max_positive_slope, cfg.max_negative_slope)
 
         traces.post_process_traces()
         traces.pair_harmonics(harm_pairing_threshold)
@@ -166,10 +185,10 @@ def one_file(file, save_dir):
         # Trace Visualization Calls (for debugging)
         ################################################################################################################
         # traces.plot_paired_traces(STFT_cut, segment_length, step_length)
-        tracesHeader = str(low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
+        tracesHeader = str(cfg.low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 13500, 15000)
+            traces.save_png(trace_save_directory, file, 5000, 15000)
 
 
 if __name__ == "__main__":
@@ -178,6 +197,7 @@ if __name__ == "__main__":
     file_ending = ".txt"  # For SPAMM 3
     filelist = generate_filelist(folders, file_ending)
     save_dir = choose_save_folder()
+    cfg.write_cfg_file(save_dir)
     print(save_dir)
     for file in filelist[0]:
         if file.endswith(file_ending):

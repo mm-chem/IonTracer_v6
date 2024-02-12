@@ -296,7 +296,7 @@ class Trace:
         self.fragmentation_indices.append(0)
         # print('Drop threshold: ', str(self.drop_threshold))
 
-        plot = 0
+        plot = 1
         min_drop_spacing = 5
         intercept = abs(stats.siegelslopes(differentialTrace)[1])
         differentialTrace = differentialTrace - intercept
@@ -336,7 +336,7 @@ class Trace:
                 fragment_counter = fragment_counter + 1
                 self.fragments.append(newFrag)
             else:
-                print("Rejected short ion trace.")
+                print("Rejected single point ion fragment.")
 
     def fragment_analyzer(self):
         if len(self.fragments) > 1:
@@ -532,7 +532,7 @@ class Fragment:
             G = 5.541968
             H = -2.67478
             J = 0.0000
-            K = 0.1735
+            K = 0.8272
             L = 4.78043467
             M = 0.13541854
             A00 = 783474.415
@@ -681,12 +681,12 @@ if __name__ == "__main__":
     show_plots = False
     smoothed_output = True  # Smooth the histogram before calculating the peak
     f_computed_axv_lines = True
-    SPAMM = 2
+    SPAMM = 3
     print("ANALYSIS PERFORMED FOR SPAMM INSTRUMENT")
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -5  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -716,7 +716,7 @@ if __name__ == "__main__":
     # Energy filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # eV / z boundaries... ions cannot physically exist outside a small range of energies. Set that range here
-    ev_z_min = 195  # Default 200
+    ev_z_min = 175  # Default 200
     ev_z_max = 275  # Default 245
 
     # Splitting data by slope controls
@@ -726,19 +726,19 @@ if __name__ == "__main__":
 
     # Ion existence pre/post emission event controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    before_existence_threshold = 25
-    after_existence_threshold = 25
+    before_existence_threshold = 3
+    after_existence_threshold = 3
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
+    max_mass = 5000 * 1000000  # Maximum mass in MDa (only adjust 1st number)
     min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_charge_selection = 1000
+    max_charge_selection = 10000
     min_charge_selection = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -748,8 +748,8 @@ if __name__ == "__main__":
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # If we only want to look at traces that contain a drop in a specific size range (in freq-computed range),
     # define that range here. Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
-    min_drop_search_boundary = -4
-    max_drop_search_boundary = -2
+    min_drop_search_boundary = -200
+    max_drop_search_boundary = 200
 
     # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
     analysis_name = (analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) +

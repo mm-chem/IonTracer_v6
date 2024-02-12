@@ -75,7 +75,7 @@ def EmissionPlotter(folder):
 
     # Plot frequency computed charge loss alongside directly computed charge loss
     fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
-    hist_out = ax.hist(dropsChargeChange, 100, range=[-15, 10], color=plot_color)
+    hist_out = ax.hist(dropsChargeChange, 100, range=[-25, 25], color=plot_color)
 
     bins = hist_out[1][0:-1]
     counts = hist_out[0]
@@ -98,7 +98,7 @@ def EmissionPlotter(folder):
     ax.set_title("")
     ax.set_xlabel('Charge', fontsize=24, weight='bold')
     ax.set_ylabel('Counts', fontsize=24, weight='bold')
-    ax.set_xticks([-15, -10, -5, 0, 5, 10])
+    ax.set_xticks([-25, -15, -5, 5, 15, 25])
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
     ax.minorticks_on()
@@ -113,11 +113,11 @@ def EmissionPlotter(folder):
                 transparent='true')
 
     fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
-    hist_out = ax.hist(freqComputedChargeLoss, 100, range=[-4, 0], color=plot_color)
+    hist_out = ax.hist(freqComputedChargeLoss, 100, range=[-12, 4], color=plot_color)
     ax.set_title("")
     ax.set_xlabel('Charge', fontsize=24, weight='bold')
     ax.set_ylabel('Counts', fontsize=24, weight='bold')
-    ax.set_xticks([-4, -3, -2, -1, 0])
+    ax.set_xticks([-12, -8, -4, 0, 4])
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
     ax.minorticks_on()
@@ -128,8 +128,8 @@ def EmissionPlotter(folder):
     ax.spines['bottom'].set_linewidth(3)
     ax.spines['left'].set_linewidth(3)
 
-    plt.axvline(-1, color=fit_color, linestyle='solid', linewidth=3)
-    plt.axvline(-2, color=fit_color, linestyle='solid', linewidth=3)
+    # plt.axvline(-1, color=fit_color, linestyle='solid', linewidth=3)
+    # plt.axvline(-2, color=fit_color, linestyle='solid', linewidth=3)
 
     # Comment out for SINGLE gaussian fitting
     bin_spacing = abs(bins[1] - bins[0])

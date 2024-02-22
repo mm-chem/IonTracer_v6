@@ -72,14 +72,14 @@ class AnalConfig:
         self.step_length = 5  # How many ms to advance the window
         self.zerofill = 250  # How many ms worth of data to zerofill
 
-        self.low_freq = 5000  # Lower bound on region of interest
-        self.high_freq = 30000  # Upper bound on region of interest
-        self.min_trace_charge = 100  # Minimum amplitude to trace (default 25)
+        self.low_freq = 10000  # Lower bound on region of interest
+        self.high_freq = 40000  # Upper bound on region of interest
+        self.min_trace_charge = 50  # Minimum amplitude to trace (default 25)
         self.min_trace_length = 5
         self.time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
         self.freq_correlation_tolerance = 1000  # In Hz on the y-axis. How close do trace fragments need to be - direction ONLY
         self.max_positive_slope = 50  # In Hz
-        self.max_negative_slope = -2000  # In Hz, how much can points in ONE FRAGMENT differ
+        self.max_negative_slope = -200  # In Hz, how much can points in ONE FRAGMENT differ
 
     def write_cfg_file(self, path):
         path = path + '/config.utils'
@@ -87,7 +87,7 @@ class AnalConfig:
             f.write(''.join(["cfg.%s = %s\n" % (k, v) for k, v in self.__dict__.items()]))
 
 
-cfg = AnalConfig(SPAMM=3)
+cfg = AnalConfig(SPAMM=2)
 
 harm_pairing_threshold = 75  # In Hz (maximum deviation for a trace to be considered a harmonic)
 check_start = 100  # Start check at x ms
@@ -188,7 +188,7 @@ def one_file(file, save_dir):
         tracesHeader = str(cfg.low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 5000, 15000)
+            traces.save_png(trace_save_directory, file, 12000, 18000)
 
 
 if __name__ == "__main__":

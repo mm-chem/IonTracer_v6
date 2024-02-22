@@ -80,20 +80,23 @@ def EmissionPlotter(folder):
     bins = hist_out[1][0:-1]
     counts = hist_out[0]
 
-    A_constraints = [-np.inf, np.inf]
-    mu_constraints = [-np.inf, np.inf]
-    sigma_constraints = [0, np.inf]
-    offset_constraints = [0, 1]
-    lower_bounds = [A_constraints[0], mu_constraints[0], sigma_constraints[0], offset_constraints[0]]
-    upper_bounds = [A_constraints[1], mu_constraints[1], sigma_constraints[1], offset_constraints[1]]
-    param, param_cov = curve_fit(gauss, bins, np.array(counts), bounds=(lower_bounds, upper_bounds))
+    try:
+        A_constraints = [-np.inf, np.inf]
+        mu_constraints = [-np.inf, np.inf]
+        sigma_constraints = [0, np.inf]
+        offset_constraints = [0, 1]
+        lower_bounds = [A_constraints[0], mu_constraints[0], sigma_constraints[0], offset_constraints[0]]
+        upper_bounds = [A_constraints[1], mu_constraints[1], sigma_constraints[1], offset_constraints[1]]
+        param, param_cov = curve_fit(gauss, bins, np.array(counts), bounds=(lower_bounds, upper_bounds))
 
-    peak_contrib_to_slice = gauss(bins, param[0], param[1], param[2], param[3])
+        peak_contrib_to_slice = gauss(bins, param[0], param[1], param[2], param[3])
 
-    ax.plot(bins, peak_contrib_to_slice, linewidth=3, linestyle="solid", color=fit_color)
-    text_string = f'{param[1]:.2f}'
-    ax.text(param[1] + 5, param[0] - 1.5, text_string, fontsize=16)
-    print("Amplitude Computed Peak Center: ", str(param[1]))
+        ax.plot(bins, peak_contrib_to_slice, linewidth=3, linestyle="solid", color=fit_color)
+        text_string = f'{param[1]:.2f}'
+        ax.text(param[1] + 5, param[0] - 1.5, text_string, fontsize=16)
+        print("Amplitude Computed Peak Center: ", str(param[1]))
+    except:
+        print("Unable to fit amp-computed charge loss to Gaussian.")
 
     ax.set_title("")
     ax.set_xlabel('Charge', fontsize=24, weight='bold')
@@ -113,11 +116,11 @@ def EmissionPlotter(folder):
                 transparent='true')
 
     fig, ax = plt.subplots(layout='tight', figsize=(7, 5))
-    hist_out = ax.hist(freqComputedChargeLoss, 100, range=[-12, 4], color=plot_color)
+    hist_out = ax.hist(freqComputedChargeLoss, 100, range=[-4, 0], color=plot_color)
     ax.set_title("")
     ax.set_xlabel('Charge', fontsize=24, weight='bold')
     ax.set_ylabel('Counts', fontsize=24, weight='bold')
-    ax.set_xticks([-12, -8, -4, 0, 4])
+    ax.set_xticks([-4, -3, -2, -1, 0])
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
     ax.minorticks_on()

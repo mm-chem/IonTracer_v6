@@ -296,7 +296,7 @@ class Trace:
         self.fragmentation_indices.append(0)
         # print('Drop threshold: ', str(self.drop_threshold))
 
-        plot = 1
+        plot = 0
         min_drop_spacing = 5
         intercept = abs(stats.siegelslopes(differentialTrace)[1])
         differentialTrace = differentialTrace - intercept
@@ -681,12 +681,12 @@ if __name__ == "__main__":
     show_plots = False
     smoothed_output = True  # Smooth the histogram before calculating the peak
     f_computed_axv_lines = True
-    SPAMM = 3
+    SPAMM = 2
     print("ANALYSIS PERFORMED FOR SPAMM INSTRUMENT")
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -5  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -726,19 +726,19 @@ if __name__ == "__main__":
 
     # Ion existence pre/post emission event controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    before_existence_threshold = 3
-    after_existence_threshold = 3
+    before_existence_threshold = 25
+    after_existence_threshold = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_mass = 5000 * 1000000  # Maximum mass in MDa (only adjust 1st number)
+    max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
     min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    max_charge_selection = 10000
+    max_charge_selection = 1000
     min_charge_selection = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -748,8 +748,8 @@ if __name__ == "__main__":
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # If we only want to look at traces that contain a drop in a specific size range (in freq-computed range),
     # define that range here. Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
-    min_drop_search_boundary = -200
-    max_drop_search_boundary = 200
+    min_drop_search_boundary = -20
+    max_drop_search_boundary = 20
 
     # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
     analysis_name = (analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) +

@@ -346,28 +346,28 @@ class IonField:
                 #           Extrapolate next frequency point based on linfit equation, append that to ion trace
                 #           Set paired flag to 1
                 #           Count how many segments this occurs for. Reset this counter if pairing is successful
-                if self.ions[index].paired == 0 and self.ions[index].interpolation_counter <= max_interpolated_points \
-                        and self.ions[index].linfitEquation is not None:
-                    try:
-                        extrapolated_point = self.ions[index].linfitEquation(self.ions[index].trace_indices[-1] + 1)
-                        extrapolated_point = np.round(extrapolated_point)
-                        newIon = Ion()
-                        newIon.center = extrapolated_point
-                        newIon.index = STFT_index
-                        newIon.magnitude = STFT_slice[int(np.round(newIon.center))]
-                        newIon.phase = 0
-
-                        # Recall: Ion is marked as paired inside the merge function
-                        self.ions[index].merge_as_step(newIon)
-                        self.ions[index].interpolation_counter = self.ions[index].interpolation_counter + 1
-                    except Exception:
-                        print("Extrapolation out of bounds.")
+                # if self.ions[index].paired == 0 and self.ions[index].interpolation_counter <= max_interpolated_points \
+                #         and self.ions[index].linfitEquation is not None:
+                #     try:
+                #         extrapolated_point = self.ions[index].linfitEquation(self.ions[index].trace_indices[-1] + 1)
+                #         extrapolated_point = np.round(extrapolated_point)
+                #         newIon = Ion()
+                #         newIon.center = extrapolated_point
+                #         newIon.index = STFT_index
+                #         newIon.magnitude = STFT_slice[int(np.round(newIon.center))]
+                #         newIon.phase = 0
+                #
+                #         # Recall: Ion is marked as paired inside the merge function
+                #         self.ions[index].merge_as_step(newIon)
+                #         self.ions[index].interpolation_counter = self.ions[index].interpolation_counter + 1
+                #     except Exception:
+                #         print("Extrapolation out of bounds.")
 
             # # For the NEW ions that are (sadly) unpaired for now... give them one free pass
-            for index in range(len(new_ions)):
-                if new_ions[index].paired == 0:
-                    new_ions[index].paired = 1
-                    self.ions.append(new_ions[index])
+            # for index in range(len(new_ions)):
+            #     if new_ions[index].paired == 0:
+            #         new_ions[index].paired = 1
+            #         self.ions.append(new_ions[index])
 
             deleteFlag = 1
             while deleteFlag:

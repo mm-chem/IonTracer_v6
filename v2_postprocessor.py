@@ -25,6 +25,7 @@ import v1_charge_loss_plotter as DropPlotter
 import v1_drops_per_trace_plotter as DropsPerTrace
 import v1_trace_slope_plotter as TraceSlopeDist
 import v1_eV_per_charge_plotter as EnergyPlotter
+import v1_trace_slope_plotter_no_drops as TraceSlopeDistNoDrops
 
 
 def plot_rayleigh_line(axis_range=[0, 200]):
@@ -686,7 +687,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -5  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -702,7 +703,7 @@ if __name__ == "__main__":
     plot_drop_statistics = 1
     plot_1C_loss_scaled_m_z = 0
     # For Emeline's project
-    export_no_drop_percent_mass_change = 0
+    export_no_drop_slopes = 1
     z_2_n = 0
 
     # Salt and z2/n controls
@@ -716,7 +717,7 @@ if __name__ == "__main__":
     # Energy filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # eV / z boundaries... ions cannot physically exist outside a small range of energies. Set that range here
-    ev_z_min = 175  # Default 200
+    ev_z_min = 195  # Default 200
     ev_z_max = 275  # Default 245
 
     # Splitting data by slope controls
@@ -756,6 +757,7 @@ if __name__ == "__main__":
                      "_drops_" + str(before_existence_threshold) + "_spacing_" + str(drop_threshold) + "_threshold")
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
+
     try:
         os.mkdir(analysis_name)
     except FileExistsError:
@@ -792,9 +794,10 @@ if __name__ == "__main__":
     m_z_collection = []
     energy_collection = []
     HAR_collection = []
-    slope_collection = []
     included_slopes = []
     no_drop_traces = []
+    trace_lifetime = []
+    fragment_lifetime = []
     for trace in traces:
         is_included = True
         fragment_counter = 0
@@ -804,6 +807,8 @@ if __name__ == "__main__":
         avg_energy_frags = 0
         avg_HAR_frags = 0
         avg_slope_frags = 0
+        avg_frag_length = 0
+        trace_length = len(trace.trace)
 
         for fragment in trace.fragments:
             # Average the mass, charge, HAR, energy, and m/z of all fragments in a trace
@@ -813,6 +818,7 @@ if __name__ == "__main__":
             avg_mz_frags = avg_mz_frags + fragment.m_z
             avg_energy_frags = avg_energy_frags + fragment.energy_eV
             avg_HAR_frags = avg_HAR_frags + fragment.HAR
+            avg_frag_length = avg_frag_length + len(fragment.trace)
             try:
                 avg_slope_frags = avg_slope_frags + (
                         fragment.linfitEquation.coefficients[0] ** 2 / fragment.linfitEquation.coefficients[1] ** 2)
@@ -827,6 +833,7 @@ if __name__ == "__main__":
             avg_HAR_frags = avg_HAR_frags / fragment_counter
             avg_slope_frags = avg_slope_frags / fragment_counter
             avg_slope_frags = avg_slope_frags * 10.0e7
+            avg_frag_length = avg_frag_length / fragment_counter
         except ZeroDivisionError:
             print("ERROR (noncritical): NO fragments in trace / division by zero")
             noncrit_zero_div_errors = noncrit_zero_div_errors + 1
@@ -852,7 +859,6 @@ if __name__ == "__main__":
             print('Rejected trace: Energy out of bounds (' + str(avg_energy_frags) + ')')
             fail_count_energy = fail_count_energy + 1
 
-        slope_collection.append(avg_slope_frags)
         if is_included:
             if len(trace.fragments) == 1:
                 no_drop_traces.append(trace)
@@ -863,6 +869,8 @@ if __name__ == "__main__":
             energy_collection.append(avg_energy_frags)
             HAR_collection.append(avg_HAR_frags)
             included_slopes.append(avg_slope_frags)
+            trace_lifetime.append(trace_length)
+            fragment_lifetime.append(avg_frag_length)
             if len(trace.drops) > 0:
                 added_drop = False
                 for element in trace.drops:
@@ -884,21 +892,30 @@ if __name__ == "__main__":
 
     no_drop_initial_mass = []
     no_drop_final_mass = []
+    no_drop_slopes = []
     delta_mass_no_drops = []
-    for sloped_trace in traces:
+    no_drop_avg_lifetime = []
+    for sloped_trace in no_drop_traces:
         no_drop_final_mass.append(sloped_trace.fragments[0].pt_by_pt_mass_slope * len(sloped_trace.fragments[0].trace)
                                   + sloped_trace.fragments[0].pt_by_pt_mass_intercept)
         no_drop_initial_mass.append(sloped_trace.fragments[0].pt_by_pt_mass_intercept)
         delta_mass_no_drops.append(no_drop_initial_mass[-1] - no_drop_final_mass[-1])
+        no_drop_avg_lifetime.append(len(sloped_trace.trace))
+        try:
+            no_drop_slopes.append((sloped_trace.fragments[0].linfitEquation.coefficients[0] ** 2 /
+                                   sloped_trace.fragments[0].linfitEquation.coefficients[1] ** 2) * 10.0e7)
+        except Exception as e:
+            print('Linear fit produced no slope')
 
     a1_init_mass = np.array(no_drop_initial_mass)
     a2_delta_mass = np.array(delta_mass_no_drops)
 
-    if export_no_drop_percent_mass_change:
-        arr = np.matrix(np.rot90([a1_init_mass, a2_delta_mass]))
-        dbfile = open(str(analysis_name) + '_evap_percent_mass_loss', 'ab')
-        pickle.dump(arr, dbfile)
+    if export_no_drop_slopes:
+        dbfile = open(str(analysis_name) + '_no_drop_slopes.pickle', 'wb')
+        pickle.dump(no_drop_slopes, dbfile)
         dbfile.close()
+        if save_plots:
+            TraceSlopeDistNoDrops.plotter(fig_save_dir)
 
     dropsSquaredRatioChange = []
     dropsMagnitude = []
@@ -929,7 +946,10 @@ if __name__ == "__main__":
         freqComputedChargeLoss.append(float(drop.freq_computed_charge_loss))
 
     try:
-        print("========= START FAILURE ANALYSIS ==========")
+        print("========= START ANALYSIS REPORT ==========")
+        print("Average lifetime of stable traces: " + str(np.mean(no_drop_avg_lifetime)) + " steps")
+        print("Average lifetime of all traces: " + str(np.mean(trace_lifetime)) + " steps")
+        print("Average lifetime of all fragments: " + str(np.mean(fragment_lifetime)) + " steps")
         print("Selected data includes " + str(len(traces)) + " valid ions and " + str(
             len(drops)) + " recorded emission events.")
         print("Rejected ions based on slope: " + str(fail_count_slope))
@@ -938,7 +958,7 @@ if __name__ == "__main__":
         print("Rejected ions based on energy: " + str(fail_count_energy))
         print("Rejected ions based on f_computed_drop: " + str(fail_count_drop))
         print("Traces with zero-length fragments: " + str(noncrit_zero_div_errors))
-        print("========= END FAILURE ANALYSIS ==========")
+        print("========= END ANALYSIS REPORT ==========")
 
     except Exception:
         print('Missing some random variable in text output...')

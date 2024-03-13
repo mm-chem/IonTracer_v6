@@ -190,8 +190,9 @@ if __name__ == "__main__":
               + ' Hz/s Drift' + ' --- Avg Mass: ' + str(trace.avg_mass) + ' Da'
               + ' --- Avg Charge: ' + str(trace.avg_charge))
 
-    ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=14300, x_end=14500)
-    ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=28600, x_end=29000)
-    ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=57200, x_end=58000)
+    # ZxxFoundation.plot_vertical_timeslices(800, 900, x_start=14300, x_end=14500)
+    ZxxFoundation.plot_vertical_timeslices(50, 75, x_start=13000, x_end=14000)
+    # ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=28600, x_end=29000)
+    # ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=57200, x_end=58000)
     ZxxFoundation.plot_all_traces_on_Zxx(12750, 14250, plot_trace_overlay=False, include_harmonics=False)
     # ZxxFoundation.plot_all_traces_on_Zxx(12750, 14000, plot_trace_overlay=False, include_harmonics=False)

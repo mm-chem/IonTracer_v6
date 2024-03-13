@@ -55,7 +55,7 @@ def generate_filelist(folders, termString):
 
 
 # WARNING: EXPORTING ZXX FILES FOR BACKGROUND GENERATION IS SLOW AND TAKES A TON OF SPACE
-export_Zxx_files = False
+export_Zxx_files = True
 export_image_files = True
 
 

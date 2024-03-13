@@ -71,15 +71,17 @@ class AnalConfig:
         self.segment_length = 25  # Segment length in ms
         self.step_length = 5  # How many ms to advance the window
         self.zerofill = 250  # How many ms worth of data to zerofill
+        self.max_coexisting_ions = 10
+        self.ignore_list = [8317, 9130, 10672, 12250, 16600, 17450, 42813, 43535, 43712]  # Traces to exclude (currently only when checking for peaks)
 
         self.low_freq = 10000  # Lower bound on region of interest
         self.high_freq = 40000  # Upper bound on region of interest
-        self.min_trace_charge = 50  # Minimum amplitude to trace (default 25)
+        self.min_trace_charge = 25  # Minimum amplitude to trace (default 25)
         self.min_trace_length = 5
         self.time_correlation_tolerance = 25  # In time bin_count on the x-axis. + or - direction
         self.freq_correlation_tolerance = 1000  # In Hz on the y-axis. How close do trace fragments need to be - direction ONLY
-        self.max_positive_slope = 50  # In Hz
-        self.max_negative_slope = -200  # In Hz, how much can points in ONE FRAGMENT differ
+        self.max_positive_slope = 50  # In steps
+        self.max_negative_slope = -500  # In Hz, how much can points in ONE FRAGMENT differ
 
     def write_cfg_file(self, path):
         path = path + '/config.utils'
@@ -139,12 +141,22 @@ def one_file(file, save_dir):
     if sep_distance < 1:
         sep_distance = 1
 
-    peak_indexes, check_prop = sig.find_peaks(magnitude_slice, height=cfg.min_trace_charge,
+    peak_indexes, check_prop = sig.find_peaks(magnitude_slice[0:int(len(magnitude_slice) / 2)], height=cfg.min_trace_charge,
                                               distance=sep_distance)
     check_peaks = peak_indexes * f_reso_check + cfg.low_freq
-    print("Resolution: " + str(f_reso))
+    real_peaks = []
+    for peak in check_peaks:
+        isreal = True
+        for noise in cfg.ignore_list:
+            if abs(peak - noise) < 100:
+                isreal = False
+        if isreal:
+            real_peaks.append(peak)
 
-    if check_peaks.size:
+    print("Resolution: " + str(f_reso))
+    print("Check peaks: " + str(check_peaks.size))
+
+    if 0 < len(real_peaks) < cfg.max_coexisting_ions:
 
         ################################################################################################################
         # Calculate STFT and trace the full file....
@@ -184,11 +196,11 @@ def one_file(file, save_dir):
         ################################################################################################################
         # Trace Visualization Calls (for debugging)
         ################################################################################################################
-        # traces.plot_paired_traces(STFT_cut, segment_length, step_length)
+        # traces.plot_paired_traces(STFT_cut, cfg.segment_length, cfg.step_length)
         tracesHeader = str(cfg.low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 12000, 18000)
+            traces.save_png(trace_save_directory, file, 10000, 20000)
 
 
 if __name__ == "__main__":

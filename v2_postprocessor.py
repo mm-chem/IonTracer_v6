@@ -26,6 +26,8 @@ import v1_drops_per_trace_plotter as DropsPerTrace
 import v1_trace_slope_plotter as TraceSlopeDist
 import v1_eV_per_charge_plotter as EnergyPlotter
 import v1_trace_slope_plotter_no_drops as TraceSlopeDistNoDrops
+import v1_mass_loss_per_drop_plotter as MassPerDrop
+import v1_mass_loss_per_drop_direct_plotter as MassPerDropDirect
 
 
 def plot_rayleigh_line(axis_range=[0, 200]):
@@ -113,7 +115,7 @@ def sliding_window_diff(trace, width, step=1):
 
 
 class Trace:
-    def __init__(self, filePath, spamm, drop_threshold, UTID):
+    def __init__(self, filePath, spamm, drop_threshold, UTID, charge_guess_for_mass_computation):
         self.SPAMM = spamm
         self.avg_slope = 0
         self.Zxx_background = []
@@ -134,6 +136,7 @@ class Trace:
         self.drop_threshold = drop_threshold
         self.avg_mass = 0
         self.avg_charge = 0
+        self.charge_guess_for_mass_computation = charge_guess_for_mass_computation
         try:
             with open(filePath, newline='') as csvfile:
                 traceReader = csv.reader(csvfile, delimiter=',')
@@ -247,8 +250,8 @@ class Trace:
             folder = self.folder
             UDID = str(self.UTID) + "d" + str(drop_counter)
             newDrop = Drop(startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final,
-                           t_before, t_after, start_mass, end_mass, fundamental_trace, drop_index,
-                           trace_indices, folder, harmInitFreq, harmFinalFreq, self.UTID, UDID)
+                           t_before, t_after, frag1.mass_pt_by_pt_linfit[-1], frag2.mass_pt_by_pt_linfit[0], fundamental_trace, drop_index,
+                           trace_indices, folder, harmInitFreq, harmFinalFreq, self.UTID, UDID, self.charge_guess_for_mass_computation)
             self.drops.append(newDrop)
         except Exception as e:
             print("Error bridging fragments...", e)
@@ -363,6 +366,7 @@ class Fragment:
         self.UFID = UFID
         self.charge_pt_by_pt = []
         self.mass_pt_by_pt = []
+        self.mass_pt_by_pt_linfit = []
         self.HAR_pt_by_pt = []
         self.C_E_pt_by_pt = []
         self.energy_eV_pt_by_pt = []
@@ -429,6 +433,8 @@ class Fragment:
 
             self.pt_by_pt_mass_slope = slope
             self.pt_by_pt_mass_intercept = intercept
+            for index in range(len(self.trace)):
+                self.mass_pt_by_pt_linfit.append(self.pt_by_pt_mass_slope * index + self.pt_by_pt_mass_intercept)
 
             for n in range(len(self.trace)):
                 slope_corrected_mass_pt_by_pt.append(self.mass_pt_by_pt[n] - slope * n)
@@ -591,10 +597,11 @@ class Fragment:
 class Drop:
     def __init__(self, startFreq, endFreq, startMag, endMag, startCharge, endCharge, C_E_initial, C_E_final, t_before,
                  t_after, start_mass, end_mass, fundamental_trace, drop_index, trace_indices, folder, harmInitFreq,
-                 harmFinalFreq, UTID, UDID):
+                 harmFinalFreq, UTID, UDID, charge_guess_for_mass_computation):
         # Used to filter out super short drops from analyis
         self.UDID = UDID
         self.UTID = UTID
+        self.charge_guess_for_mass_computation = charge_guess_for_mass_computation
         self.fundamental_trace = fundamental_trace
         self.folder = folder
         self.trace_indices = trace_indices
@@ -632,7 +639,9 @@ class Drop:
         self.expected_1C_mz_change = (self.avg_mass / (self.avg_charge - 1)) - (
                 self.avg_mass / self.avg_charge)  # The expected m/z change (positive) due to single charge loss
         self.C_loss_scaled_m_z = self.delta_m_z / self.expected_1C_mz_change
-        self.delta_mass = self.delta_m_z * self.avg_charge
+        self.delta_mass = self.avg_mass * (1 - ((self.startCharge - self.charge_guess_for_mass_computation)/
+                                                self.startCharge) * self.f_squared_ratio_change)
+        self.delta_mass_direct = self.end_mass - self.start_mass
 
 
 def gauss(x, A, mu, sigma, offset):
@@ -687,7 +696,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
     print(str(SPAMM))
     print("---------------------------------------")
-    drop_threshold = -5  # NOTE: This parameter is affected by the K parameter
+    drop_threshold = -10  # NOTE: This parameter is affected by the K parameter
     # PLOT SELECTION CONTROLS:
     freq_vs_drop_events = 0
     drops_per_trace = 1
@@ -702,6 +711,7 @@ if __name__ == "__main__":
     mass_spectrum_2D = 1
     plot_drop_statistics = 1
     plot_1C_loss_scaled_m_z = 0
+    mass_loss_distribution = 1
     # For Emeline's project
     export_no_drop_slopes = 1
     z_2_n = 0
@@ -731,10 +741,14 @@ if __name__ == "__main__":
     after_existence_threshold = 25
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+    # Allows computation of the mass if the charge lost in the event is known. We can set this known
+    # value when choosing a peak to isolate. THIS PLOT IS NOT HELPFUL IN DATASETS WITH SIGNIFICANT MASS LOSS
+    charge_guess_for_mass_computation = 1
+
     # Mass filter controls
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     max_mass = 50 * 1000000  # Maximum mass in MDa (only adjust 1st number)
-    min_mass = 0 * 1000000  # Minimum mass in MDa (only adjust 1st number)
+    min_mass = 2 * 1000000  # Minimum mass in MDa (only adjust 1st number)
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Charge filter controls
@@ -749,12 +763,12 @@ if __name__ == "__main__":
     # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # If we only want to look at traces that contain a drop in a specific size range (in freq-computed range),
     # define that range here. Otherwise, set to -20 and +20 (UNITS ARE CHARGES)
-    min_drop_search_boundary = -20
-    max_drop_search_boundary = 20
+    min_drop_search_boundary = -1.2
+    max_drop_search_boundary = -0.9
 
-    # analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
-    analysis_name = (analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) +
-                     "_drops_" + str(before_existence_threshold) + "_spacing_" + str(drop_threshold) + "_threshold")
+    analysis_name = analysis_name + "_" + str(int(min_mass / 1000000)) + "_" + str(int(max_mass / 1000000)) + "_MDa_harm"
+    # analysis_name = (analysis_name + "_" + str(min_drop_search_boundary) + "_" + str(max_drop_search_boundary) +
+    #                  "_drops_" + str(before_existence_threshold) + "_spacing_" + str(drop_threshold) + "_threshold")
     fig_save_dir = analysis_name + '.figures'
     analysis_name = analysis_name + '.pickled'
 
@@ -776,7 +790,7 @@ if __name__ == "__main__":
     file_counter = 0
     for file in filelists[0]:
         print("Processing file " + str(file_counter) + " of " + str(file_count))
-        newTrace = Trace(file, SPAMM, drop_threshold, file_counter)
+        newTrace = Trace(file, SPAMM, drop_threshold, file_counter, charge_guess_for_mass_computation)
         file_counter = file_counter + 1
         traces.append(newTrace)
         if len(newTrace.drops) > 0:
@@ -928,6 +942,7 @@ if __name__ == "__main__":
     delta_C_E = []
     delta_C_E_percent = []
     delta_mass = []
+    delta_mass_direct = []
     delta_charge = []  # Frequency computed here, amplitude computed in drop objects
     figure_counter = 0
     for drop in drops:
@@ -940,6 +955,7 @@ if __name__ == "__main__":
         delta_C_E_percent.append(drop.delta_C_E_percent)
         scaled_delta_m_z.append(drop.scaled_m_z)
         delta_mass.append(drop.delta_mass)
+        delta_mass_direct.append(drop.delta_mass_direct)
         delta_charge.append(drop.freq_computed_charge_loss)
 
         dropsChargeChange.append(float(drop.delta_charge))
@@ -947,6 +963,7 @@ if __name__ == "__main__":
 
     try:
         print("========= START ANALYSIS REPORT ==========")
+        print("Average drops per trace: " + str(np.mean(drop_counts)) + " (" + str(1/np.mean(drop_counts)) + " seconds between emission events)")
         print("Average lifetime of stable traces: " + str(np.mean(no_drop_avg_lifetime)) + " steps")
         print("Average lifetime of all traces: " + str(np.mean(trace_lifetime)) + " steps")
         print("Average lifetime of all fragments: " + str(np.mean(fragment_lifetime)) + " steps")
@@ -962,6 +979,20 @@ if __name__ == "__main__":
 
     except Exception:
         print('Missing some random variable in text output...')
+
+    if mass_loss_distribution:
+        dbfile = open(str(analysis_name) + '_mass_loss_per_drop.pickle', 'wb')
+        pickle.dump(delta_mass, dbfile)
+        dbfile.close()
+        if save_plots:
+            MassPerDrop.plotter(fig_save_dir)
+
+    if mass_loss_distribution:
+        dbfile = open(str(analysis_name) + '_mass_loss_per_drop_direct_sub.pickle', 'wb')
+        pickle.dump(delta_mass_direct, dbfile)
+        dbfile.close()
+        if save_plots:
+            MassPerDropDirect.plotter(fig_save_dir)
 
     if drops_per_trace:
         dbfile = open(str(analysis_name) + '_drops_per_trace.pickle', 'wb')

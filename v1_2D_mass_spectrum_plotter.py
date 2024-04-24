@@ -92,22 +92,23 @@ def MSPlotter(folder):
     rayleigh_x, rayleigh_y = plot_rayleigh_line(axis_range=[0, 200])
     ax.plot(rayleigh_x, rayleigh_y, color='black', linestyle="dashed", linewidth=2)
     heatmap, xedges, yedges = np.histogram2d(mass_collection, charge_collection, bins=[160, 120],
-                                             range=[[0, 10000000], [0, 500]])
+                                             range=[[0, 40000000], [0, 800]])
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     gaussmap = gaussian_filter(heatmap, 1, mode='nearest')
 
     # plt.subplot(1, 2, 2)  # row 1, col 2 index 1
-    ax.imshow(gaussmap.T, cmap='nipy_spectral_r', extent=extent, origin='lower', aspect='auto',
+    figure = ax.imshow(gaussmap.T, cmap='nipy_spectral_r', extent=extent, origin='lower', aspect='auto',
               interpolation='none')
 
     ax.set_title("")
     ax.set_xlabel('Mass (MDa)', fontsize=24, weight='bold')
     ax.set_ylabel('Charge', fontsize=24, weight='bold')
-    ax.set_xticks([0, 2000000, 4000000, 6000000, 8000000, 10000000], ["0", "2", "4", "6", "8", "10"])
+    ax.set_xticks([0, 10000000, 20000000, 30000000, 40000000], ["0", "10", "20", "30", "40"])
     # ax.set_yticks(hist_charge_bins, hist_charge_labels)
-    ax.tick_params(axis='x', which='major', labelsize=26, width=3, length=8)
-    ax.tick_params(axis='y', which='major', labelsize=26, width=3, length=8)
+    ax.tick_params(axis='x', which='major', labelsize=22, width=3, length=8)
+    ax.tick_params(axis='y', which='major', labelsize=22, width=3, length=8)
     ax.minorticks_on()
+    plt.colorbar(figure)
     ax.tick_params(axis='x', which='minor', width=2, length=4)
     ax.tick_params(axis='y', which='minor', width=2, length=4)
     ax.spines['bottom'].set_linewidth(3)

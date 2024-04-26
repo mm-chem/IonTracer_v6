@@ -61,8 +61,7 @@ class ZxxBackdrop:
         zxx_cutout = self.Zxx[:, start_slice:end_slice]
         plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.inferno(np.linspace(0, 1, end_slice -
                                                                                          start_slice)))
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
+        fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
 
         time_step = start_slice
         for column in zip(*zxx_cutout):
@@ -72,16 +71,24 @@ class ZxxBackdrop:
                 x_axis.append(i * self.resolution + self.f_range_offset)
             x_start_index = self.find_closest(x_axis, x_start)
             x_end_index = self.find_closest(x_axis, x_end)
-            ax.plot(x_axis[x_start_index:x_end_index], column[x_start_index:x_end_index], zs=time_step, zdir='z')
+            ax.plot(x_axis[x_start_index:x_end_index], column[x_start_index:x_end_index])
             # d2_col_obj = ax.fill_between(x_axis, 0.5, column, step='pre', alpha=0.1)
             # ax.add_collection3d(d2_col_obj, zs=time_step, zdir='z')
             time_step = time_step + 1
         ax.set_xlim(x_start, x_end)
-        ax.set_zlim(start_slice, end_slice)
-        ax.set_xlabel('Freq (Hz)', fontsize=10)
-        ax.set_ylabel('Charge', fontsize=10)
-        ax.set_zlabel('STFT Slice', fontsize=10)
-        ax.view_init(elev=45, azim=0, roll=90)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_linewidth(3)
+        ax.spines['bottom'].set_linewidth(3)
+        ax.set_xlabel('Frequency (Hz)', weight='bold')
+        ax.set_ylabel('STFT Intensity', weight='bold')
+        # ax.set_yticks([14000, 14050, 14100, 14150, 14200, 14250, 14300])
+
+        ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
+        ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
+        ax.minorticks_on()
+        ax.tick_params(axis='x', which='minor', width=3, length=4)
+        ax.tick_params(axis='y', which='minor', width=3, length=4)
         plt.show()
 
     def plot_all_traces_on_Zxx(self, min_freq, max_freq, include_harmonics=False, plot_trace_overlay=False):
@@ -141,9 +148,9 @@ class ZxxBackdrop:
 
 
 if __name__ == "__main__":
-    SMALL_SIZE = 16
-    MEDIUM_SIZE = 18
-    BIGGER_SIZE = 20
+    SMALL_SIZE = 24
+    MEDIUM_SIZE = 28
+    BIGGER_SIZE = 30
 
     plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
     plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
@@ -191,7 +198,8 @@ if __name__ == "__main__":
               + ' --- Avg Charge: ' + str(trace.avg_charge))
 
     # ZxxFoundation.plot_vertical_timeslices(800, 900, x_start=14300, x_end=14500)
-    ZxxFoundation.plot_vertical_timeslices(50, 75, x_start=13000, x_end=14000)
+    ZxxFoundation.plot_vertical_timeslices(180, 190, x_start=14000, x_end=14300)
+    ZxxFoundation.plot_vertical_timeslices(180, 190, x_start=28000, x_end=28600)
     # ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=28600, x_end=29000)
     # ZxxFoundation.plot_vertical_timeslices(80, 110, x_start=57200, x_end=58000)
     ZxxFoundation.plot_all_traces_on_Zxx(12750, 14250, plot_trace_overlay=False, include_harmonics=False)

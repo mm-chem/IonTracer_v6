@@ -721,9 +721,9 @@ class IonField:
             jacob = ax.pcolormesh(x, y, Zxx[0:-1][min_freq_index:max_freq_index], shading='gouraud', cmap='hot')
             fig.colorbar(jacob)
             ax.set_title("")
-            x_label = 'Time (' + str(self.step_length) + ' ms step, ' + str(self.window_length) + ' ms window)'
-            ax.set_xlabel(x_label, fontsize=24, weight='bold')
-            ax.set_ylabel('Frequency (Hz)', fontsize=24, weight='bold')
+            x_label = 'Time (ms)'
+            ax.set_xlabel(x_label, fontsize=28, weight='bold')
+            ax.set_ylabel('Frequency (Hz)', fontsize=28, weight='bold')
             # ax.set_xticks([50, 100, 150], ["250", "500", "750"])
             # ax.set_yticks([14250, 14500, 14750, 15000, 15250])
             # ax.set_yticks([13000, 13250, 13500, 13750])
@@ -734,7 +734,7 @@ class IonField:
             ax.tick_params(axis='y', which='minor', width=3, length=4)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_linewidth(3)
-            ax.spines['top'].set_linewidth(3)
+            ax.spines['left'].set_linewidth(3)
+            ax.spines['bottom'].set_linewidth(3)
             plt.savefig(save_file_path_full, bbox_inches='tight', dpi=300.0, pad_inches=0.5)
             print("Saved " + str(savedIons) + "/" + str(len(self.ions)) + " paired traces!")

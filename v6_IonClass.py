@@ -785,7 +785,7 @@ class IonField:
                 save_file_name = source_file_name + "_Zxx" + ".png"
             save_file_path_full = save_file_folder / save_file_name
 
-            fig, ax = plt.subplots(layout='tight', figsize=(13, 6.5))
+            fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
             plot_steps = len(Zxx[0])  # Assuming Zxx is of form [[], []] (list of lists)
             plot_height = len(Zxx)
             y_vals = range(int(self.f_range_offset), int(plot_height * self.resolution + self.f_range_offset),
@@ -800,14 +800,15 @@ class IonField:
                 slice(self.t_range_offset, plot_steps + self.t_range_offset, 1)]
 
             jacob = ax.pcolormesh(x, y, Zxx[0:-1][min_freq_index:max_freq_index], shading='gouraud', cmap='hot')
-            fig.colorbar(jacob)
+            # fig.colorbar(jacob)
             ax.set_title("")
-            x_label = 'Time (' + str(self.step_length) + ' ms step, ' + str(self.window_length) + ' ms window)'
-            ax.set_xlabel(x_label, fontsize=24, weight='bold')
-            ax.set_ylabel('Frequency (Hz)', fontsize=24, weight='bold')
-            # ax.set_xticks([50, 100, 150], ["250", "500", "750"])
+            x_label = 'Time (ms)'
+            ax.set_xlabel(x_label, fontsize=30, weight='bold')
+            ax.set_ylabel('Frequency (kHz)', fontsize=30, weight='bold')
+            ax.set_xticks([25, 50, 75, 100, 125, 150, 175], ["125", "250", "375", "500", "625", "750", "825"])
             # ax.set_yticks([14250, 14500, 14750, 15000, 15250])
-            # ax.set_yticks([13000, 13250, 13500, 13750])
+            ax.set_yticks([11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000], ["11.0", "12.0", "13.0", "14.0",
+                                                                                  "15.0", "16.0", "17.0", "18.0"])
             ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
             ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
             ax.minorticks_on()
@@ -815,8 +816,8 @@ class IonField:
             ax.tick_params(axis='y', which='minor', width=3, length=4)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
-            ax.spines['top'].set_linewidth(3)
-            ax.spines['top'].set_linewidth(3)
+            ax.spines['left'].set_linewidth(3)
+            ax.spines['bottom'].set_linewidth(3)
             plt.savefig(save_file_path_full, bbox_inches='tight', dpi=300.0, pad_inches=0.5)
             print("Saved " + str(savedIons) + "/" + str(len(self.ions)) + " paired traces!")
             plt.close('all')

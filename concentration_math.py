@@ -76,7 +76,6 @@ def rayleigh_calculator_diameter_given(diameter_nm, density=1):
 
     return droplet
 
-
 def rayleigh_calculator_charge_given(charge, density=1):
     # Calculates the analyte molecules per droplet when the droplet size is given in nanometers
     # Analyte concentration in mM
@@ -103,11 +102,11 @@ def rayleigh_calculator_charge_given(charge, density=1):
 
 
 if __name__ == "__main__":
-    droplet = initial_molecules_per_drop_tip_size_given(608, 5)
+    droplet = initial_molecules_per_drop_tip_size_given(700, 5)
     droplet.print_params()
     droplet = initial_molecules_per_drop_tip_size_given(1720, 5)
     droplet.print_params()
-    droplet = rayleigh_calculator_diameter_given(2.6)
+    droplet = rayleigh_calculator_diameter_given(26.72)
     droplet.print_params()
     droplet = rayleigh_calculator_charge_given(1)
     droplet.print_params()

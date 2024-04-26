@@ -71,7 +71,7 @@ class AnalConfig:
         self.segment_length = 25  # Segment length in ms
         self.step_length = 5  # How many ms to advance the window
         self.zerofill = 250  # How many ms worth of data to zerofill
-        self.max_coexisting_ions = 10
+        self.max_coexisting_ions = 30
         self.ignore_list = [8317, 9130, 10672, 12250, 16600, 17450, 42813, 43535, 43712]  # Traces to exclude (currently only when checking for peaks)
 
         self.low_freq = 10000  # Lower bound on region of interest
@@ -200,7 +200,7 @@ def one_file(file, save_dir):
         tracesHeader = str(cfg.low_freq) + "|" + str(f_reso) + "|" + str(t_range_offset)
         traces.write_ions_to_files(trace_save_directory, file, tracesHeader, export_Zxx_files)
         if export_image_files:
-            traces.save_png(trace_save_directory, file, 10000, 20000)
+            traces.save_png(trace_save_directory, file, 11000, 18000)
 
 
 if __name__ == "__main__":

@@ -56,6 +56,10 @@ def plotter(folder):
             mass_change_dist.append(point)
         dbfile.close()
 
+    st_dev = np.std(mass_change_dist)
+    st_error = st_dev / np.sqrt(len(mass_change_dist))
+    print("Std_error: " + str(st_error))
+
     fig, ax = plt.subplots(layout='tight', figsize=(14, 7))
     hist_out = ax.hist(mass_change_dist, 100, range=[-10000, 30000], color='maroon')
 
@@ -64,7 +68,7 @@ def plotter(folder):
 
     try:
         A_constraints = [40, 500]  # Amplitude
-        mu_constraints = [-1000, 1000]  # x-shift
+        mu_constraints = [10000, 20000]  # x-shift
         sigma_constraints = [1000, 15000]  # Width
         offset_constraints = [0, 1]  # Vertical offset
         lower_bounds = [A_constraints[0], mu_constraints[0], sigma_constraints[0], offset_constraints[0]]
@@ -81,10 +85,17 @@ def plotter(folder):
         print("Unable to fit amp-computed charge loss to Gaussian.")
 
     ax.set_title("")
-    ax.set_xlabel('Mass Loss (kDa)', fontsize=24, weight='bold')
-    ax.set_ylabel('Counts', fontsize=24, weight='bold')
+    ax.set_xlabel('Mass Loss (kDa)', fontsize=30, weight='bold')
+    ax.set_ylabel('Counts', fontsize=30, weight='bold')
     ax.tick_params(axis='x', which='major', labelsize=26, width=4, length=8)
     ax.tick_params(axis='y', which='major', labelsize=26, width=4, length=8)
+    ax.minorticks_on()
+    ax.tick_params(axis='x', which='minor', width=3, length=4)
+    ax.tick_params(axis='y', which='minor', width=3, length=4)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(3)
+    ax.spines['bottom'].set_linewidth(3)
     ax.set_xticks([-10000, -5000, 0, 5000, 10000, 15000, 20000, 25000, 30000],
                   ["-10", "-5", "0", "5", "10", "15", "20", "25", "30"])
     ax.spines['top'].set_visible(False)

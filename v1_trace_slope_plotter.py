@@ -33,9 +33,9 @@ def plotter(folder):
         print("Path exists already.")
     analysis_name = analysis_name + '/' + new_folder_name
 
-    SMALL_SIZE = 18
-    MEDIUM_SIZE = 21
-    BIGGER_SIZE = 24
+    SMALL_SIZE = 21
+    MEDIUM_SIZE = 24
+    BIGGER_SIZE = 26
 
     plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
     plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
